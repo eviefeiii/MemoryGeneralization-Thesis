@@ -1,0 +1,583 @@
+---
+title: "Thesis Data Aggregation/Cleaning"
+author: "Yifei Chen"
+date: "2024-02-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( 
+  echo = TRUE, 
+  message = FALSE,
+  warning = FALSE
+  )
+```
+
+```{r}
+# Load necessary library
+library(ggplot2)
+library(tidyverse)
+library (broom)
+library(psych)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(purrr)
+library(tibble)
+library(stringr)
+library(ez)
+library(multcomp)
+library(jsonlite)
+```
+
+# Data Aggregation and Cleaning
+
+## Preparation
+
+Put all the csv files into a list and set the conditions appropriately.
+
+```{r}
+# List all CSV files in the directory
+csv_files <- list.files(path = "Raw Data", pattern = "\\.csv$", full.names = TRUE)
+```
+
+Initialize an empty data frame to store the results.
+
+```{r}
+# Initialize an empty dataframe to store the results
+GenRepRec_clean <- data.frame(stringsAsFactors = FALSE)
+```
+
+## Adding in participant ID
+
+```{r}
+# Function to process a single file
+process_file_id <- function(file_name) {
+  # Read the CSV file
+  df <- read.csv(file_name, stringsAsFactors = FALSE)
+  
+  # Extract the string from the 'sona_id' column
+  sona_id <- df$sona_id[1]
+  
+  return(as.data.frame(sona_id))
+}
+
+# Process each file and combine results
+results_id <- map_df(csv_files, process_file_id)
+
+# Rename the columns
+colnames(results_id) <- c('Participant ID')
+
+# Add the combined results into the data frames column-wise
+GenRepRec_clean <- results_id
+```
+
+## Calculating the accuracy rate
+
+### associative inference choice trials
+
+Calculate the accuracy rate of associative inference choice trials (by trial type and session) across all csv files.
+
+```{r}
+# Function to process each CSV file
+process_assinf_choice_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to string
+  data$assinfTrialType <- as.factor(data$assinfTrialType)
+  
+  # Group by test type and session, then summarize to calculate accuracy rate
+  accuracy_rates <- data %>%
+    filter(!is.na(responseCorrectChoice), 
+           !is.na(assinfTrialType), !is.na(session),
+           assinfTrialType != "", session != "", responseCorrectChoice !="") %>%
+    mutate(responseCorrectChoice = as.logical(responseCorrectChoice)) %>%
+    group_by(assinfTrialType, session) %>%
+    summarise(AccuracyRate = mean(responseCorrectChoice, na.rm = TRUE) * 100) %>%
+    ungroup()
+
+  # If you want separate columns for each session as well, you can pivot wider twice, first on session then on test type. This will create column names like 'AB_0', 'AB_1', 'BC_0', 'BC_1', 'AC_0', 'AC_1' etc.
+  result_df <- accuracy_rates %>%
+    unite("test_session", assinfTrialType, session, sep = "_") %>%
+    spread(key = test_session, value = AccuracyRate)
+
+  # Rename columns to include prefix "assinf_choice_"
+  new_names <- paste0("assinf_choice_", names(result_df))
+  names(result_df) <- new_names
+  
+  # Define the desired order of your test_sessions
+  desired_order <- c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1")
+
+  # Arrange the columns by the desired order
+  result_df <- result_df[,paste0("assinf_choice_", desired_order)]
+}
+
+# Apply the function to each file and combine the results
+assinf_choice_acc <- map_df(csv_files, process_assinf_choice_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_choice_acc)
+```
+
+### associative inference source trials
+
+Calculate the accuracy rate of associative inference source trials (by trial type and session) across all csv files.
+
+```{r}
+# Function to process each CSV file
+process_assinf_source_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to factor
+  data$assinfTrialType <- as.factor(data$assinfTrialType)
+  
+  # Group by test type and session, then summarize to calculate accuracy rate
+  accuracy_rates <- data %>%
+    filter(!is.na(responseCorrectSource), 
+           !is.na(assinfTrialType), !is.na(session),
+           assinfTrialType != "", session != "", responseCorrectSource !="") %>%
+    mutate(responseCorrectSource = as.logical(responseCorrectSource)) %>%
+    group_by(assinfTrialType, session) %>%
+    summarise(AccuracyRate = mean(responseCorrectSource, na.rm = TRUE) * 100) %>%
+    ungroup()
+
+  # If you want separate columns for each session as well, you can pivot wider twice, first on session then on test type. This will create column names like 'AB_0', 'AB_1', 'BC_0', 'BC_1', 'AC_0', 'AC_1' etc.
+  result_df <- accuracy_rates %>%
+    unite("test_session", assinfTrialType, session, sep = "_") %>%
+    spread(key = test_session, value = AccuracyRate)
+  
+  # Rename columns to include prefix "assinf_source_"
+  new_names <- paste0("assinf_source_", names(result_df))
+  names(result_df) <- new_names
+  
+  # Define the desired order of your test_sessions
+  desired_order <- c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1")
+
+  # Arrange the columns by the desired order 
+  result_df <- result_df[,paste0("assinf_source_", desired_order)]
+}
+
+# Apply the function to each file and combine the results
+assinf_source_acc <- map_df(csv_files, process_assinf_source_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_source_acc)
+```
+
+### semantic representation trials
+
+Calculate the accuracy rate of semantic representation trials (by session) across all csv files.
+
+```{r}
+# Function to process each CSV file
+process_semrep_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Group by session, then summarize to calculate accuracy rate
+  result_df <- data %>%
+    filter(!is.na(responseCorrectSem), !is.na(session), session != "", responseCorrectSem !="") %>%
+    mutate(responseCorrectSem = as.logical(responseCorrectSem)) %>%
+    group_by(session) %>%
+    summarise(AccuracyRate = mean(responseCorrectSem, na.rm = TRUE) * 100) %>%
+    ungroup() %>%
+    pivot_wider(names_from = session, values_from = AccuracyRate)
+
+  # Rename columns to include prefix "semrep_"
+  new_names <- paste0("semrep_", names(result_df))
+  names(result_df) <- new_names
+  
+  return(result_df)
+}
+
+# Apply the function to each file and combine the results
+semrep_acc <- map_df(csv_files, process_semrep_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, semrep_acc)
+```
+
+### visual representation trials
+
+Calculate the accuracy rate of visual representation trials (by session) across all csv files.
+
+```{r}
+# Function to process each CSV file
+process_visrep_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Group by session, then summarize to calculate accuracy rate
+  result_df <- data %>%
+    filter(!is.na(responseCorrectVis), !is.na(session), session != "", responseCorrectVis !="") %>%
+    mutate(responseCorrectVis = as.logical(responseCorrectVis)) %>%
+    group_by(session) %>%
+    summarise(AccuracyRate = mean(responseCorrectVis, na.rm = TRUE) * 100) %>%
+    ungroup() %>%
+    pivot_wider(names_from = session, values_from = AccuracyRate)
+
+  # Rename columns to include prefix "visrep_"
+  new_names <- paste0("visrep_", names(result_df))
+  names(result_df) <- new_names
+  
+  return(result_df)
+}
+
+# Apply the function to each file and combine the results
+visrep_acc <- map_df(csv_files, process_visrep_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, visrep_acc)
+```
+
+### recognition memory trials
+
+Calculate the accuracy rate of recognition memory trials (by trial type and session) across all csv files.
+
+```{r}
+# Function to process each CSV file
+process_rec_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to factor
+  data$recTrialType <- as.factor(data$recTrialType)
+  
+  # Group by test type and session, then summarize to calculate accuracy rate
+  accuracy_rates <- data %>%
+    filter(!is.na(responseCorrectRec), 
+           !is.na(recTrialType), !is.na(session),
+           recTrialType != "", session != "", responseCorrectRec !="") %>%
+    mutate(responseCorrectRec = as.logical(responseCorrectRec)) %>%
+    group_by(recTrialType, session) %>%
+    summarise(AccuracyRate = mean(responseCorrectRec, na.rm = TRUE) * 100) %>%
+    ungroup()
+
+  # If you want separate columns for each session as well, you can pivot wider twice, first on session then on test type. 
+  result_df <- accuracy_rates %>%
+    unite("test_session", recTrialType, session, sep = "_") %>%
+    spread(key = test_session, value = AccuracyRate)
+  
+  # Rename columns to include prefix "rec_"
+  new_names <- paste0("rec_", names(result_df))
+  names(result_df) <- new_names
+  
+  # Define the desired order of your test_sessions
+  desired_order <- c("Old_0", "Old_1", "Lure_0", "Lure_1", "New_0", "New_1")
+
+  # Arrange the columns by the desired order 
+  result_df <- result_df[,paste0("rec_", desired_order)]
+}
+
+# Apply the function to each file and combine the results
+rec_acc <- map_df(csv_files, process_rec_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, rec_acc)
+
+# Define the weights
+weights_0 <- c(rec_Old_0 = 32/95, rec_Lure_0 = 31/95, rec_New_0 = 32/95)
+weights_1 <- c(rec_Old_1 = 31/95, rec_Lure_1 = 32/95, rec_New_1 = 32/95)
+
+# Calculate the weighted mean for each row
+GenRepRec_clean$rec_Overall_0 <- (GenRepRec_clean$rec_Old_0 * weights_0[1] + GenRepRec_clean$rec_Lure_0 * weights_0[2] + GenRepRec_clean$rec_New_0 * weights_0[3]) 
+GenRepRec_clean$rec_Overall_1 <- (GenRepRec_clean$rec_Old_1 * weights_1[1] + GenRepRec_clean$rec_Lure_1 * weights_1[2] + GenRepRec_clean$rec_New_1 * weights_1[3]) 
+```
+
+## Restructuring the survey and demographics data
+
+Extract the JSON string and parse it into a new data frame for survey questions.
+
+```{r}
+# Function to process a single file
+process_survey_data <- function(file_name) {
+    # Read the CSV file
+    df <- read.csv(file_name, stringsAsFactors = FALSE)
+    
+    # Extract the JSON string from the third-to-last row of the 'response' column
+    json_str <- df$response[nrow(df) - 2]
+    
+    # Parse the JSON string into a data frame
+    parsed_data <- fromJSON(json_str)
+    
+    return(as.data.frame(parsed_data))
+}
+
+# Process each file and combine results
+results_survey <- map_df(csv_files, process_survey_data)
+
+# Rename the columns from 'Q0'-'Q8' to 'Q1'-'Q9'
+colnames(results_survey) <- paste0('Q', 1:9)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, results_survey)
+```
+
+Extract the JSON string and parse it into a new data frame for demographics information.
+
+```{r}
+# Function to process a single file
+process_demographics <- function(file_name) {
+    # Read the CSV file
+    df <- read.csv(file_name, stringsAsFactors = FALSE)
+    
+    # Extract the JSON string from the second-to-last row of the 'response' column
+    json_str <- df$response[nrow(df) - 1]
+    
+    # Parse the JSON string into a data frame
+    parsed_data <- fromJSON(json_str)
+    
+    return(as.data.frame(parsed_data))
+}
+
+# Process each file and combine results
+results_demographics <- map_df(csv_files, process_demographics)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, results_demographics)
+```
+
+## Calculating AC trials accuracy after removing triads with incorrect AB and BC trials
+
+Choice trials:
+
+```{r}
+process_directcorrect_AC_choice_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to string and lowercase for consistency
+  data$responseCorrectChoice <- tolower(as.character(data$responseCorrectChoice))
+  data$assinfTrialType <- as.character(data$assinfTrialType)
+  
+  # Create a list of triadIDs for all AB and BC trials where the response was incorrect
+  incorrect_ab_bc_triadIDs <- data %>%
+    filter(assinfTrialType %in% c('AB', 'BC'), responseCorrectChoice == 'false') %>%
+    pull(triadID) # Extracting the triadID directly
+  
+  # Filter for AC trials
+  ac_trials <- data %>%
+    filter(assinfTrialType == 'AC' & (responseCorrectChoice == "false" | responseCorrectChoice == "true"))
+
+  # Filter out AC trials where triadID matches any of the incorrect AB/BC triadIDs
+  correct_ac_trials <- ac_trials %>%
+    filter(!(triadID %in% incorrect_ab_bc_triadIDs))
+  
+  # Calculate accuracy rate by session, using the filtered AC trials
+  session_accuracy <- correct_ac_trials %>%
+    mutate(responseCorrectChoice = responseCorrectChoice == "true") %>%
+    group_by(session) %>%
+    summarise(
+      DirectCorrect_AC_Choice_Acc = mean(responseCorrectChoice, na.rm = TRUE) * 100,
+      NumberOf_DirectCorrect_AC = n()
+    ) %>%
+    ungroup() %>%
+    pivot_longer(-session, names_to = "Metric", values_to = "Value") %>%
+    unite("SessionMetric", Metric, session, sep = "_") %>%
+    pivot_wider(names_from = "SessionMetric", values_from = "Value")
+  
+  return(session_accuracy)
+}
+
+# Apply the function to each file and combine the results
+directcorrect_AC_choice_acc <- map_df(csv_files, process_directcorrect_AC_choice_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, directcorrect_AC_choice_acc)
+```
+
+Source trials:
+
+```{r}
+process_directcorrect_AC_source_acc <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to string and lowercase for consistency
+  data$responseCorrectSource <- tolower(as.character(data$responseCorrectSource))
+  data$assinfTrialType <- as.character(data$assinfTrialType)
+  
+  # Create a list of triadIDs for all AB and BC trials where the response was incorrect
+  incorrect_ab_bc_triadIDs <- data %>%
+    filter(assinfTrialType %in% c('AB', 'BC'), responseCorrectSource == 'false') %>%
+    pull(triadID) # Extracting the triadID directly
+  
+  # Filter for AC trials
+  ac_trials <- data %>%
+    filter(assinfTrialType == 'AC' & (responseCorrectSource == "false" | responseCorrectSource == "true"))
+
+  # Filter out AC trials where triadID matches any of the incorrect AB/BC triadIDs
+  correct_ac_trials <- ac_trials %>%
+    filter(!(triadID %in% incorrect_ab_bc_triadIDs))
+  
+  # Calculate accuracy rate by session, using the filtered AC trials
+  session_accuracy <- correct_ac_trials %>%
+    mutate(responseCorrectSource = responseCorrectSource == "true") %>%
+    group_by(session) %>%
+    summarise(
+      DirectCorrect_AC_Source_Acc = mean(responseCorrectSource, na.rm = TRUE) * 100,
+      NumberOf_DirectCorrect_AC_Source = n()
+    ) %>%
+    ungroup() %>%
+    pivot_longer(-session, names_to = "Metric", values_to = "Value") %>%
+    unite("SessionMetric", Metric, session, sep = "_") %>%
+    pivot_wider(names_from = "SessionMetric", values_from = "Value")
+  
+  return(session_accuracy)
+}
+
+# Apply the function to each file and combine the results
+directcorrect_AC_source_acc <- map_df(csv_files, process_directcorrect_AC_source_acc)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, directcorrect_AC_source_acc)
+```
+
+## Calculating associative inference choice/source accuracy and reaction time by cue image's position across different trial types
+
+```{r}
+process_assinf_bycue <- function(file_path, test_col) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Ensure column names are correctly referenced as symbols
+  test_sym <- rlang::sym(test_col)
+  
+  # Pre-process data
+  data <- data %>%
+    filter(!is.na(.data[[test_sym]]), !is.na(assinfTrialType), !is.na(cuePosition),
+           assinfTrialType != "", cuePosition != "", .data[[test_sym]] != "") %>%
+    mutate(test = as.logical(.data[[test_sym]]),
+           rt = as.numeric(rt))
+  
+  # Calculate accuracy and count for each trial type and cue position
+  accuracy_data <- data %>%
+    group_by(assinfTrialType, cuePosition, session) %>%
+    summarise(accuracy = mean(test, na.rm = TRUE) * 100,
+              rt = mean(rt, na.rm = TRUE),
+              count = n(), 
+              .groups = 'drop')
+  
+  # Combine accuracy and count into one column with a key
+  accuracy_long <- accuracy_data %>%
+    pivot_longer(c(accuracy, rt, count), names_to = "metric", values_to = "value")
+
+  # Pivot to wide format with combined metric names
+  accuracy_wide <- accuracy_long %>%
+    unite("condition_metric", assinfTrialType, cuePosition, metric, session, sep = "_") %>%
+    pivot_wider(names_from = condition_metric, values_from = value)
+
+  return(accuracy_wide)
+}
+
+# Apply the function to each file and combine the results for Choice tests
+assinf_choice_bycue <- map_df(csv_files, ~process_assinf_bycue(.x, "responseCorrectChoice"))
+colnames(assinf_choice_bycue) <- paste0("choice_", colnames(assinf_choice_bycue))
+
+# Apply the function to each file and combine the results for Source tests
+assinf_source_bycue <- map_df(csv_files, ~process_assinf_bycue(.x, "responseCorrectSource"))
+colnames(assinf_source_bycue) <- paste0("source_", colnames(assinf_source_bycue))
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_choice_bycue)
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_source_bycue)
+```
+
+## Calculating mean reaction time for the associative inference test
+
+### associative inference choice trials
+
+```{r}
+# Function to process each CSV file
+process_assinf_choice_rt <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to string
+  data$assinfTrialType <- as.factor(data$assinfTrialType)
+  
+  # Group by test type and session, then summarize to calculate accuracy rate
+  mean_rts <- data %>%
+    filter(!is.na(responseCorrectChoice), 
+           !is.na(assinfTrialType), !is.na(session),
+           assinfTrialType != "", session != "", responseCorrectChoice !="") %>%
+    mutate(rt = as.numeric(rt)) %>%
+    group_by(assinfTrialType, session) %>%
+    summarise(rt = mean(rt, na.rm = TRUE)) %>%
+    ungroup()
+
+  # If you want separate columns for each session as well, you can pivot wider twice, first on session then on test type. This will create column names like 'AB_0', 'AB_1', 'BC_0', 'BC_1', 'AC_0', 'AC_1' etc.
+  result_df <- mean_rts %>%
+    unite("test_session", assinfTrialType, session, sep = "_") %>%
+    spread(key = test_session, value = rt)
+
+  # Rename columns to include prefix "assinf_choice_"
+  new_names <- paste0("rt_assinf_choice_", names(result_df))
+  names(result_df) <- new_names
+  
+  # Define the desired order of your test_sessions
+  desired_order <- c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1")
+
+  # Arrange the columns by the desired order
+  result_df <- result_df[,paste0("rt_assinf_choice_", desired_order)]
+}
+
+# Apply the function to each file and combine the results
+assinf_choice_rt <- map_df(csv_files, process_assinf_choice_rt)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_choice_rt)
+```
+
+### associative inference source trials
+
+```{r}
+# Function to process each CSV file
+process_assinf_source_rt <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Convert relevant columns to string
+  data$assinfTrialType <- as.factor(data$assinfTrialType)
+  
+  # Group by test type and session, then summarize to calculate accuracy rate
+  mean_rts <- data %>%
+    filter(!is.na(responseCorrectSource), 
+           !is.na(assinfTrialType), !is.na(session),
+           assinfTrialType != "", session != "", responseCorrectSource !="") %>%
+    mutate(rt = as.numeric(rt)) %>%
+    group_by(assinfTrialType, session) %>%
+    summarise(rt = mean(rt, na.rm = TRUE)) %>%
+    ungroup()
+
+  # If you want separate columns for each session as well, you can pivot wider twice, first on session then on test type. This will create column names like 'AB_0', 'AB_1', 'BC_0', 'BC_1', 'AC_0', 'AC_1' etc.
+  result_df <- mean_rts %>%
+    unite("test_session", assinfTrialType, session, sep = "_") %>%
+    spread(key = test_session, value = rt)
+
+  # Rename columns to include prefix "assinf_choice_"
+  new_names <- paste0("rt_assinf_source_", names(result_df))
+  names(result_df) <- new_names
+  
+  # Define the desired order of your test_sessions
+  desired_order <- c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1")
+
+  # Arrange the columns by the desired order
+  result_df <- result_df[,paste0("rt_assinf_source_", desired_order)]
+}
+
+# Apply the function to each file and combine the results
+assinf_source_rt <- map_df(csv_files, process_assinf_source_rt)
+
+# Combine the data frames column-wise
+GenRepRec_clean <- cbind(GenRepRec_clean, assinf_source_rt)
+```
+
+## Convert back to the CSV file
+
+```{r}
+# Write the updated data frame back to the CSV file
+write.csv(GenRepRec_clean, 'GenRepRec_clean_TwoSessionsVer.csv', row.names = FALSE)
+```

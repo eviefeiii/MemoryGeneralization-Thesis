@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Memory Representation and Generalization</title>
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.2.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-likert@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.4"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+
+    var jsPsych = initJsPsych({
+        data: { subject: sona_id },
+        on_finish: function() {
+            // Add the subject property to all data
+            jsPsych.data.addProperties({ subject: sona_id });
+    
+            // Redirect to the specified URL with the subject code
+            window.location = "https://wupsych.sona-systems.com/webstudy_credit.aspx?experiment_id=799&credit_token=7dc0365bc4214411b55b62da04f7bd2c&survey_code=" + sona_id;
+        }
+    });
+    
+    var sona_id = jsPsych.data.getURLVariable('sona_id')
+
+    var timeline = [];
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function createTriads(images) {
+        // Shuffle the images
+        shuffle(images);
+
+        let triads = [];
+        let uniqueIdCounter = 1; // Start a counter for unique IDs
+        for (let i = 0; i < images.length; i += 3) {
+            // Create a triad with the next three images
+            let triad = images.slice(i, i + 3);
+            
+            // Add a unique identifier as the fourth element
+            triad.push("id_" + uniqueIdCounter);
+            
+            // Increment the unique ID counter for the next triad
+            uniqueIdCounter++;
+            
+            // Add the triad to the list of triads
+            triads.push(triad);
+        }
+        return triads;
+    }
+
+    // Function to prepare encoding trials
+    function EncodingTrials(triads) {
+        let abPairs = [];
+        let bcPairs = [];
+
+        // Create AB and BC pairs with randomized positions
+        triads.forEach(triad => {
+            let abPair = Math.random() < 0.5 ? {left: triad[0], right: triad[1]} : {left: triad[1], right: triad[0]};
+            let bcPair = Math.random() < 0.5 ? {left: triad[1], right: triad[2]} : {left: triad[2], right: triad[1]};
+
+            abPairs.push(abPair);
+            bcPairs.push(bcPair);
+        });
+
+        // Randomize the order within AB pairs and BC pairs
+        shuffle(abPairs);
+        shuffle(bcPairs);
+
+        // Concatenate AB pairs first, then BC pairs
+        return abPairs.concat(bcPairs);
+    }
+
+    // Create triad list
+    var stimuli = ["Stimuli/001a.jpg","Stimuli/002a.jpg","Stimuli/003a.jpg","Stimuli/004a.jpg","Stimuli/005a.jpg","Stimuli/006a.jpg","Stimuli/007a.jpg","Stimuli/008a.jpg","Stimuli/009a.jpg","Stimuli/010a.jpg","Stimuli/011a.jpg","Stimuli/012a.jpg","Stimuli/013a.jpg","Stimuli/014a.jpg","Stimuli/015a.jpg","Stimuli/016a.jpg","Stimuli/017a.jpg","Stimuli/018a.jpg","Stimuli/019a.jpg","Stimuli/020a.jpg","Stimuli/021a.jpg","Stimuli/022a.jpg","Stimuli/023a.jpg","Stimuli/024a.jpg","Stimuli/025a.jpg","Stimuli/026a.jpg","Stimuli/027a.jpg","Stimuli/028a.jpg","Stimuli/029a.jpg","Stimuli/030a.jpg","Stimuli/031a.jpg","Stimuli/032a.jpg","Stimuli/033a.jpg","Stimuli/034a.jpg","Stimuli/035a.jpg","Stimuli/036a.jpg","Stimuli/037a.jpg","Stimuli/038a.jpg","Stimuli/039a.jpg","Stimuli/040a.jpg","Stimuli/041a.jpg","Stimuli/042a.jpg","Stimuli/043a.jpg","Stimuli/044a.jpg","Stimuli/045a.jpg","Stimuli/046a.jpg","Stimuli/047a.jpg","Stimuli/048a.jpg","Stimuli/049a.jpg","Stimuli/050a.jpg","Stimuli/051a.jpg","Stimuli/052a.jpg","Stimuli/053a.jpg","Stimuli/054a.jpg","Stimuli/055a.jpg","Stimuli/056a.jpg","Stimuli/057a.jpg","Stimuli/058a.jpg","Stimuli/059a.jpg","Stimuli/060a.jpg","Stimuli/061a.jpg","Stimuli/062a.jpg","Stimuli/063a.jpg","Stimuli/064a.jpg","Stimuli/065a.jpg","Stimuli/066a.jpg","Stimuli/067a.jpg","Stimuli/068a.jpg","Stimuli/069a.jpg","Stimuli/070a.jpg","Stimuli/071a.jpg","Stimuli/072a.jpg","Stimuli/073a.jpg","Stimuli/074a.jpg","Stimuli/075a.jpg","Stimuli/076a.jpg","Stimuli/077a.jpg","Stimuli/078a.jpg","Stimuli/079a.jpg","Stimuli/080a.jpg","Stimuli/081a.jpg","Stimuli/082a.jpg","Stimuli/083a.jpg","Stimuli/084a.jpg","Stimuli/085a.jpg","Stimuli/086a.jpg","Stimuli/087a.jpg","Stimuli/088a.jpg","Stimuli/089a.jpg","Stimuli/090a.jpg","Stimuli/091a.jpg","Stimuli/092a.jpg","Stimuli/093a.jpg","Stimuli/094a.jpg","Stimuli/095a.jpg","Stimuli/096a.jpg","Stimuli/097a.jpg","Stimuli/098a.jpg","Stimuli/099a.jpg","Stimuli/100a.jpg","Stimuli/101a.jpg","Stimuli/102a.jpg","Stimuli/103a.jpg","Stimuli/104a.jpg","Stimuli/105a.jpg","Stimuli/106a.jpg","Stimuli/107a.jpg","Stimuli/108a.jpg","Stimuli/109a.jpg","Stimuli/110a.jpg","Stimuli/111a.jpg","Stimuli/112a.jpg","Stimuli/113a.jpg","Stimuli/114a.jpg","Stimuli/115a.jpg","Stimuli/116a.jpg","Stimuli/117a.jpg","Stimuli/118a.jpg","Stimuli/119a.jpg","Stimuli/120a.jpg","Stimuli/121a.jpg","Stimuli/122a.jpg","Stimuli/123a.jpg","Stimuli/124a.jpg","Stimuli/125a.jpg","Stimuli/126a.jpg"];
+    let imageTriads = createTriads(stimuli);
+
+    // Slice out 21 triads for each session
+    var session_1 = imageTriads.slice(0, 21);
+    var session_2 = imageTriads.slice(21, 42);
+
+    // Map the triad list to visual representation images
+    var rep_stimuli = ['Stimuli/019_Frog.jpg', 'Stimuli/060_Binocular.jpg', 'Stimuli/082_Bench.jpg', 'Stimuli/047_Pie.jpg', 'Stimuli/125_Food Tray.jpg', 'Stimuli/111_Boxing Glove.jpg', 'Stimuli/074_Toaster.jpg', 'Stimuli/020_Chewing Gum.jpg', 'Stimuli/075_Snowflake.jpg', 'Stimuli/080_Fountain.jpg', 'Stimuli/004_Pen.jpg', 'Stimuli/108_Seesaw.jpg', 'Stimuli/048_Funnel.jpg', 'Stimuli/102_Rolling Pin.jpg', 'Stimuli/062_Lemon.jpg', 'Stimuli/098_Paper Towel.jpg', 'Stimuli/120_Wine Cork.jpg', 'Stimuli/095_Wine.jpg', 'Stimuli/081_Palm Tree.jpg', 'Stimuli/041_Toothpick Holder.jpg', 'Stimuli/097_Book.jpg', 'Stimuli/121_Goggles.jpg', 'Stimuli/051_Balloon.jpg', 'Stimuli/008_Beach Ball.jpg', 'Stimuli/021_Paper Cutter.jpg', 'Stimuli/079_Racket.jpg', 'Stimuli/031_Hammer.jpg', 'Stimuli/003_Pizza Cutter.jpg', 'Stimuli/029_Credit Card.jpg', 'Stimuli/086_Bread.jpg', 'Stimuli/002_Hand.jpg', 'Stimuli/056_Ruler.jpg', 'Stimuli/100_Boot.jpg', 'Stimuli/042_Earplug.jpg', 'Stimuli/112_Screw.jpg', 'Stimuli/092_Violin.jpg', 'Stimuli/043_Calculator.jpg', 'Stimuli/025_Makeup Brush.jpg', 'Stimuli/091_Starfish.jpg', 'Stimuli/011_Coin Purse.jpg', 'Stimuli/036_Claw Clip.jpg', 'Stimuli/044_Cushion.jpg', 'Stimuli/023_Stapler.jpg', 'Stimuli/037_Dice.jpg', 'Stimuli/083_Dandelion.jpg', 'Stimuli/118_Lime.jpg', 'Stimuli/054_Jeans.jpg', 'Stimuli/050_Measuring Cup.jpg', 'Stimuli/007_Baby Bottle.jpg', 'Stimuli/065_Leather Journal.jpg', 'Stimuli/064_Office Chair.jpg', 'Stimuli/030_Bar Stool.jpg', 'Stimuli/068_Gas Mask.jpg', 'Stimuli/126_Dinosaur Toy.jpg', 'Stimuli/072_Glass Pitcher.jpg', 'Stimuli/090_Bird Cage.jpg', 'Stimuli/016_Coin.jpg', 'Stimuli/117_Gemstone.jpg', 'Stimuli/009_Whiteboard.jpg', 'Stimuli/119_Flip Phone.jpg', 'Stimuli/103_Remote Control.jpg', 'Stimuli/099_Potato Chip.jpg', 'Stimuli/124_Pet Food.jpg', 'Stimuli/061_Hanger.jpg', 'Stimuli/113_Washing Machine.jpg', 'Stimuli/057_Peanut.jpg', 'Stimuli/052_Cereal.jpg', 'Stimuli/013_Jacket.jpg', 'Stimuli/073_Model Car.jpg', 'Stimuli/088_Loudspeaker.jpg', 'Stimuli/116_Battery.jpg', 'Stimuli/017_Marshmallow.jpg', 'Stimuli/093_Highlighter Pen.jpg', 'Stimuli/114_Curling Iron.jpg', 'Stimuli/058_Carved Pumpkin.jpg', 'Stimuli/022_Traffic Cone.jpg', 'Stimuli/018_Surfboard.jpg', 'Stimuli/094_Dragon Figurine.jpg', 'Stimuli/101_Broccoli.jpg', 'Stimuli/027_Toothbrush.jpg', 'Stimuli/107_Toilet Paper.jpg', 'Stimuli/010_Hair Dryer.jpg', 'Stimuli/035_Corn.jpg', 'Stimuli/055_Music Disc.jpg', 'Stimuli/071_Crab.jpg', 'Stimuli/032_Cassette Player.jpg', 'Stimuli/028_Party Hat.jpg', 'Stimuli/059_Silverware Set.jpg', 'Stimuli/040_Headset.jpg', 'Stimuli/015_Tape Measure.jpg', 'Stimuli/024_Pendant Necklace.jpg', 'Stimuli/006_Seahorse.jpg', 'Stimuli/078_Domino Tile.jpg', 'Stimuli/096_Bicycle.jpg', 'Stimuli/039_Fishing Rod.jpg', 'Stimuli/046_Armour.jpg', 'Stimuli/122_Coffee Maker.jpg', 'Stimuli/045_Cardboard Box.jpg', 'Stimuli/063_Faucet.jpg', 'Stimuli/038_Golf Cart.jpg', 'Stimuli/085_Whistle.jpg', 'Stimuli/069_Chalkboard.jpg', 'Stimuli/014_Shark.jpg', 'Stimuli/110_Dish Rack.jpg', 'Stimuli/087_Baking Whisk.jpg', 'Stimuli/005_Acorn.jpg', 'Stimuli/077_Turntable Lock.jpg', 'Stimuli/067_Lantern.jpg', 'Stimuli/053_Floor Lamp.jpg', 'Stimuli/089_Jersey Shirt.jpg', 'Stimuli/070_Milkshake.jpg', 'Stimuli/105_Flower.jpg', 'Stimuli/001_Pebble.jpg', 'Stimuli/106_Music Stand.jpg', 'Stimuli/034_Key.jpg', 'Stimuli/033_CD Player.jpg', 'Stimuli/084_Scooter.jpg', 'Stimuli/123_Scratching Post.jpg', 'Stimuli/104_Trophy.jpg', 'Stimuli/076_Camera.jpg', 'Stimuli/012_Screwdriver.jpg', 'Stimuli/026_Bowling Ball.jpg', 'Stimuli/066_Paring Knife.jpg', 'Stimuli/115_Banana.jpg', 'Stimuli/049_Graduation Cap.jpg', 'Stimuli/109_Pear.jpg'];
+    let mapping_rep = {
+        'Stimuli/001a.jpg': 'Stimuli/001_Pebble.jpg',
+        'Stimuli/002a.jpg': 'Stimuli/002_Hand.jpg',
+        'Stimuli/003a.jpg': 'Stimuli/003_Pizza Cutter.jpg',
+        'Stimuli/004a.jpg': 'Stimuli/004_Pen.jpg',
+        'Stimuli/005a.jpg': 'Stimuli/005_Acorn.jpg',
+        'Stimuli/006a.jpg': 'Stimuli/006_Seahorse.jpg',
+        'Stimuli/007a.jpg': 'Stimuli/007_Baby Bottle.jpg',
+        'Stimuli/008a.jpg': 'Stimuli/008_Beach Ball.jpg',
+        'Stimuli/009a.jpg': 'Stimuli/009_Whiteboard.jpg',
+        'Stimuli/010a.jpg': 'Stimuli/010_Hair Dryer.jpg',
+        'Stimuli/011a.jpg': 'Stimuli/011_Coin Purse.jpg',
+        'Stimuli/012a.jpg': 'Stimuli/012_Screwdriver.jpg',
+        'Stimuli/013a.jpg': 'Stimuli/013_Jacket.jpg',
+        'Stimuli/014a.jpg': 'Stimuli/014_Shark.jpg',
+        'Stimuli/015a.jpg': 'Stimuli/015_Tape Measure.jpg',
+        'Stimuli/016a.jpg': 'Stimuli/016_Coin.jpg',
+        'Stimuli/017a.jpg': 'Stimuli/017_Marshmallow.jpg',
+        'Stimuli/018a.jpg': 'Stimuli/018_Surfboard.jpg',
+        'Stimuli/019a.jpg': 'Stimuli/019_Frog.jpg',
+        'Stimuli/020a.jpg': 'Stimuli/020_Chewing Gum.jpg',
+        'Stimuli/021a.jpg': 'Stimuli/021_Paper Cutter.jpg',
+        'Stimuli/022a.jpg': 'Stimuli/022_Traffic Cone.jpg',
+        'Stimuli/023a.jpg': 'Stimuli/023_Stapler.jpg',
+        'Stimuli/024a.jpg': 'Stimuli/024_Pendant Necklace.jpg',
+        'Stimuli/025a.jpg': 'Stimuli/025_Makeup Brush.jpg',
+        'Stimuli/026a.jpg': 'Stimuli/026_Bowling Ball.jpg',
+        'Stimuli/027a.jpg': 'Stimuli/027_Toothbrush.jpg',
+        'Stimuli/028a.jpg': 'Stimuli/028_Party Hat.jpg',
+        'Stimuli/029a.jpg': 'Stimuli/029_Credit Card.jpg',
+        'Stimuli/030a.jpg': 'Stimuli/030_Bar Stool.jpg',
+        'Stimuli/031a.jpg': 'Stimuli/031_Hammer.jpg',
+        'Stimuli/032a.jpg': 'Stimuli/032_Cassette Player.jpg',
+        'Stimuli/033a.jpg': 'Stimuli/033_CD Player.jpg',
+        'Stimuli/034a.jpg': 'Stimuli/034_Key.jpg',
+        'Stimuli/035a.jpg': 'Stimuli/035_Corn.jpg',
+        'Stimuli/036a.jpg': 'Stimuli/036_Claw Clip.jpg',
+        'Stimuli/037a.jpg': 'Stimuli/037_Dice.jpg',
+        'Stimuli/038a.jpg': 'Stimuli/038_Golf Cart.jpg',
+        'Stimuli/039a.jpg': 'Stimuli/039_Fishing Rod.jpg',
+        'Stimuli/040a.jpg': 'Stimuli/040_Headset.jpg',
+        'Stimuli/041a.jpg': 'Stimuli/041_Toothpick Holder.jpg',
+        'Stimuli/042a.jpg': 'Stimuli/042_Earplug.jpg',
+        'Stimuli/043a.jpg': 'Stimuli/043_Calculator.jpg',
+        'Stimuli/044a.jpg': 'Stimuli/044_Cushion.jpg',
+        'Stimuli/045a.jpg': 'Stimuli/045_Cardboard Box.jpg',
+        'Stimuli/046a.jpg': 'Stimuli/046_Armour.jpg',
+        'Stimuli/047a.jpg': 'Stimuli/047_Pie.jpg',
+        'Stimuli/048a.jpg': 'Stimuli/048_Funnel.jpg',
+        'Stimuli/049a.jpg': 'Stimuli/049_Graduation Cap.jpg',
+        'Stimuli/050a.jpg': 'Stimuli/050_Measuring Cup.jpg',
+        'Stimuli/051a.jpg': 'Stimuli/051_Balloon.jpg',
+        'Stimuli/052a.jpg': 'Stimuli/052_Cereal.jpg',
+        'Stimuli/053a.jpg': 'Stimuli/053_Floor Lamp.jpg',
+        'Stimuli/054a.jpg': 'Stimuli/054_Jeans.jpg',
+        'Stimuli/055a.jpg': 'Stimuli/055_Music Disc.jpg',
+        'Stimuli/056a.jpg': 'Stimuli/056_Ruler.jpg',
+        'Stimuli/057a.jpg': 'Stimuli/057_Peanut.jpg',
+        'Stimuli/058a.jpg': 'Stimuli/058_Carved Pumpkin.jpg',
+        'Stimuli/059a.jpg': 'Stimuli/059_Silverware Set.jpg',
+        'Stimuli/060a.jpg': 'Stimuli/060_Binocular.jpg',
+        'Stimuli/061a.jpg': 'Stimuli/061_Hanger.jpg',
+        'Stimuli/062a.jpg': 'Stimuli/062_Lemon.jpg',
+        'Stimuli/063a.jpg': 'Stimuli/063_Faucet.jpg',
+        'Stimuli/064a.jpg': 'Stimuli/064_Office Chair.jpg',
+        'Stimuli/065a.jpg': 'Stimuli/065_Leather Journal.jpg',
+        'Stimuli/066a.jpg': 'Stimuli/066_Paring Knife.jpg',
+        'Stimuli/067a.jpg': 'Stimuli/067_Lantern.jpg',
+        'Stimuli/068a.jpg': 'Stimuli/068_Gas Mask.jpg',
+        'Stimuli/069a.jpg': 'Stimuli/069_Chalkboard.jpg',
+        'Stimuli/070a.jpg': 'Stimuli/070_Milkshake.jpg',
+        'Stimuli/071a.jpg': 'Stimuli/071_Crab.jpg',
+        'Stimuli/072a.jpg': 'Stimuli/072_Glass Pitcher.jpg',
+        'Stimuli/073a.jpg': 'Stimuli/073_Model Car.jpg',
+        'Stimuli/074a.jpg': 'Stimuli/074_Toaster.jpg',
+        'Stimuli/075a.jpg': 'Stimuli/075_Snowflake.jpg',
+        'Stimuli/076a.jpg': 'Stimuli/076_Camera.jpg',
+        'Stimuli/077a.jpg': 'Stimuli/077_Turntable Lock.jpg',
+        'Stimuli/078a.jpg': 'Stimuli/078_Domino Tile.jpg',
+        'Stimuli/079a.jpg': 'Stimuli/079_Racket.jpg',
+        'Stimuli/080a.jpg': 'Stimuli/080_Fountain.jpg',
+        'Stimuli/081a.jpg': 'Stimuli/081_Palm Tree.jpg',
+        'Stimuli/082a.jpg': 'Stimuli/082_Bench.jpg',
+        'Stimuli/083a.jpg': 'Stimuli/083_Dandelion.jpg',
+        'Stimuli/084a.jpg': 'Stimuli/084_Scooter.jpg',
+        'Stimuli/085a.jpg': 'Stimuli/085_Whistle.jpg',
+        'Stimuli/086a.jpg': 'Stimuli/086_Bread.jpg',
+        'Stimuli/087a.jpg': 'Stimuli/087_Baking Whisk.jpg',
+        'Stimuli/088a.jpg': 'Stimuli/088_Loudspeaker.jpg',
+        'Stimuli/089a.jpg': 'Stimuli/089_Jersey Shirt.jpg',
+        'Stimuli/090a.jpg': 'Stimuli/090_Bird Cage.jpg',
+        'Stimuli/091a.jpg': 'Stimuli/091_Starfish.jpg',
+        'Stimuli/092a.jpg': 'Stimuli/092_Violin.jpg',
+        'Stimuli/093a.jpg': 'Stimuli/093_Highlighter Pen.jpg',
+        'Stimuli/094a.jpg': 'Stimuli/094_Dragon Figurine.jpg',
+        'Stimuli/095a.jpg': 'Stimuli/095_Wine.jpg',
+        'Stimuli/096a.jpg': 'Stimuli/096_Bicycle.jpg',
+        'Stimuli/097a.jpg': 'Stimuli/097_Book.jpg',
+        'Stimuli/098a.jpg': 'Stimuli/098_Paper Towel.jpg',
+        'Stimuli/099a.jpg': 'Stimuli/099_Potato Chip.jpg',
+        'Stimuli/100a.jpg': 'Stimuli/100_Boot.jpg',
+        'Stimuli/101a.jpg': 'Stimuli/101_Broccoli.jpg',
+        'Stimuli/102a.jpg': 'Stimuli/102_Rolling Pin.jpg',
+        'Stimuli/103a.jpg': 'Stimuli/103_Remote Control.jpg',
+        'Stimuli/104a.jpg': 'Stimuli/104_Trophy.jpg',
+        'Stimuli/105a.jpg': 'Stimuli/105_Flower.jpg',
+        'Stimuli/106a.jpg': 'Stimuli/106_Music Stand.jpg',
+        'Stimuli/107a.jpg': 'Stimuli/107_Toilet Paper.jpg',
+        'Stimuli/108a.jpg': 'Stimuli/108_Seesaw.jpg',
+        'Stimuli/109a.jpg': 'Stimuli/109_Pear.jpg',
+        'Stimuli/110a.jpg': 'Stimuli/110_Dish Rack.jpg',
+        'Stimuli/111a.jpg': 'Stimuli/111_Boxing Glove.jpg',
+        'Stimuli/112a.jpg': 'Stimuli/112_Screw.jpg',
+        'Stimuli/113a.jpg': 'Stimuli/113_Washing Machine.jpg',
+        'Stimuli/114a.jpg': 'Stimuli/114_Curling Iron.jpg',
+        'Stimuli/115a.jpg': 'Stimuli/115_Banana.jpg',
+        'Stimuli/116a.jpg': 'Stimuli/116_Battery.jpg',
+        'Stimuli/117a.jpg': 'Stimuli/117_Gemstone.jpg',
+        'Stimuli/118a.jpg': 'Stimuli/118_Lime.jpg',
+        'Stimuli/119a.jpg': 'Stimuli/119_Flip Phone.jpg',
+        'Stimuli/120a.jpg': 'Stimuli/120_Wine Cork.jpg',
+        'Stimuli/121a.jpg': 'Stimuli/121_Goggles.jpg',
+        'Stimuli/122a.jpg': 'Stimuli/122_Coffee Maker.jpg',
+        'Stimuli/123a.jpg': 'Stimuli/123_Scratching Post.jpg',
+        'Stimuli/124a.jpg': 'Stimuli/124_Pet Food.jpg',
+        'Stimuli/125a.jpg': 'Stimuli/125_Food Tray.jpg',
+        'Stimuli/126a.jpg': 'Stimuli/126_Dinosaur Toy.jpg'
+    };
+    
+    function transformArray(originalArray, mapping) {
+        return originalArray.map(triad => triad.map(item => mapping[item] || item));
+    }
+
+    // create the repTriads for both sessions 
+    let session_1_repTriads = transformArray(session_1, mapping_rep);
+    let session_2_repTriads = transformArray(session_2, mapping_rep);
+    
+    // console.log(session_1_repTriads);
+
+    // Map the image list to lure images
+    var lure_stimuli = ['Stimuli/056b.jpg', 'Stimuli/074b.jpg', 'Stimuli/016b.jpg', 'Stimuli/077b.jpg', 'Stimuli/102b.jpg', 'Stimuli/061b.jpg', 'Stimuli/121b.jpg', 'Stimuli/001b.jpg', 'Stimuli/068b.jpg', 'Stimuli/012b.jpg', 'Stimuli/059b.jpg', 'Stimuli/050b.jpg', 'Stimuli/044b.jpg', 'Stimuli/033b.jpg', 'Stimuli/062b.jpg', 'Stimuli/065b.jpg', 'Stimuli/048b.jpg', 'Stimuli/024b.jpg', 'Stimuli/107b.jpg', 'Stimuli/104b.jpg', 'Stimuli/035b.jpg', 'Stimuli/021b.jpg', 'Stimuli/113b.jpg', 'Stimuli/027b.jpg', 'Stimuli/114b.jpg', 'Stimuli/042b.jpg', 'Stimuli/011b.jpg', 'Stimuli/029b.jpg', 'Stimuli/122b.jpg', 'Stimuli/004b.jpg', 'Stimuli/007b.jpg', 'Stimuli/054b.jpg', 'Stimuli/093b.jpg', 'Stimuli/111b.jpg', 'Stimuli/010b.jpg', 'Stimuli/031b.jpg', 'Stimuli/014b.jpg', 'Stimuli/120b.jpg', 'Stimuli/005b.jpg', 'Stimuli/002b.jpg', 'Stimuli/080b.jpg', 'Stimuli/078b.jpg', 'Stimuli/118b.jpg', 'Stimuli/099b.jpg', 'Stimuli/051b.jpg', 'Stimuli/073b.jpg', 'Stimuli/038b.jpg', 'Stimuli/123b.jpg', 'Stimuli/006b.jpg', 'Stimuli/018b.jpg', 'Stimuli/049b.jpg', 'Stimuli/112b.jpg', 'Stimuli/070b.jpg', 'Stimuli/095b.jpg', 'Stimuli/075b.jpg', 'Stimuli/030b.jpg', 'Stimuli/069b.jpg', 'Stimuli/089b.jpg', 'Stimuli/037b.jpg', 'Stimuli/091b.jpg', 'Stimuli/045b.jpg', 'Stimuli/106b.jpg', 'Stimuli/076b.jpg', 'Stimuli/082b.jpg', 'Stimuli/046b.jpg', 'Stimuli/119b.jpg', 'Stimuli/055b.jpg', 'Stimuli/039b.jpg', 'Stimuli/096b.jpg', 'Stimuli/057b.jpg', 'Stimuli/020b.jpg', 'Stimuli/100b.jpg', 'Stimuli/066b.jpg', 'Stimuli/034b.jpg', 'Stimuli/103b.jpg', 'Stimuli/125b.jpg', 'Stimuli/023b.jpg', 'Stimuli/043b.jpg', 'Stimuli/067b.jpg', 'Stimuli/041b.jpg', 'Stimuli/036b.jpg', 'Stimuli/032b.jpg', 'Stimuli/060b.jpg', 'Stimuli/126b.jpg', 'Stimuli/013b.jpg', 'Stimuli/009b.jpg', 'Stimuli/047b.jpg', 'Stimuli/058b.jpg', 'Stimuli/026b.jpg', 'Stimuli/084b.jpg', 'Stimuli/087b.jpg', 'Stimuli/085b.jpg', 'Stimuli/052b.jpg', 'Stimuli/105b.jpg', 'Stimuli/015b.jpg', 'Stimuli/003b.jpg', 'Stimuli/108b.jpg', 'Stimuli/109b.jpg', 'Stimuli/071b.jpg', 'Stimuli/088b.jpg', 'Stimuli/019b.jpg', 'Stimuli/090b.jpg', 'Stimuli/094b.jpg', 'Stimuli/083b.jpg', 'Stimuli/028b.jpg', 'Stimuli/115b.jpg', 'Stimuli/022b.jpg', 'Stimuli/097b.jpg', 'Stimuli/025b.jpg', 'Stimuli/072b.jpg', 'Stimuli/086b.jpg', 'Stimuli/063b.jpg', 'Stimuli/117b.jpg', 'Stimuli/116b.jpg', 'Stimuli/124b.jpg', 'Stimuli/110b.jpg', 'Stimuli/081b.jpg', 'Stimuli/064b.jpg', 'Stimuli/092b.jpg', 'Stimuli/040b.jpg', 'Stimuli/098b.jpg', 'Stimuli/008b.jpg', 'Stimuli/053b.jpg', 'Stimuli/017b.jpg', 'Stimuli/101b.jpg', 'Stimuli/079b.jpg'];
+    let mapping_lure = {
+        'Stimuli/001a.jpg': 'Stimuli/001b.jpg',
+        'Stimuli/002a.jpg': 'Stimuli/002b.jpg',
+        'Stimuli/003a.jpg': 'Stimuli/003b.jpg',
+        'Stimuli/004a.jpg': 'Stimuli/004b.jpg',
+        'Stimuli/005a.jpg': 'Stimuli/005b.jpg',
+        'Stimuli/006a.jpg': 'Stimuli/006b.jpg',
+        'Stimuli/007a.jpg': 'Stimuli/007b.jpg',
+        'Stimuli/008a.jpg': 'Stimuli/008b.jpg',
+        'Stimuli/009a.jpg': 'Stimuli/009b.jpg',
+        'Stimuli/010a.jpg': 'Stimuli/010b.jpg',
+        'Stimuli/011a.jpg': 'Stimuli/011b.jpg',
+        'Stimuli/012a.jpg': 'Stimuli/012b.jpg',
+        'Stimuli/013a.jpg': 'Stimuli/013b.jpg',
+        'Stimuli/014a.jpg': 'Stimuli/014b.jpg',
+        'Stimuli/015a.jpg': 'Stimuli/015b.jpg',
+        'Stimuli/016a.jpg': 'Stimuli/016b.jpg',
+        'Stimuli/017a.jpg': 'Stimuli/017b.jpg',
+        'Stimuli/018a.jpg': 'Stimuli/018b.jpg',
+        'Stimuli/019a.jpg': 'Stimuli/019b.jpg',
+        'Stimuli/020a.jpg': 'Stimuli/020b.jpg',
+        'Stimuli/021a.jpg': 'Stimuli/021b.jpg',
+        'Stimuli/022a.jpg': 'Stimuli/022b.jpg',
+        'Stimuli/023a.jpg': 'Stimuli/023b.jpg',
+        'Stimuli/024a.jpg': 'Stimuli/024b.jpg',
+        'Stimuli/025a.jpg': 'Stimuli/025b.jpg',
+        'Stimuli/026a.jpg': 'Stimuli/026b.jpg',
+        'Stimuli/027a.jpg': 'Stimuli/027b.jpg',
+        'Stimuli/028a.jpg': 'Stimuli/028b.jpg',
+        'Stimuli/029a.jpg': 'Stimuli/029b.jpg',
+        'Stimuli/030a.jpg': 'Stimuli/030b.jpg',
+        'Stimuli/031a.jpg': 'Stimuli/031b.jpg',
+        'Stimuli/032a.jpg': 'Stimuli/032b.jpg',
+        'Stimuli/033a.jpg': 'Stimuli/033b.jpg',
+        'Stimuli/034a.jpg': 'Stimuli/034b.jpg',
+        'Stimuli/035a.jpg': 'Stimuli/035b.jpg',
+        'Stimuli/036a.jpg': 'Stimuli/036b.jpg',
+        'Stimuli/037a.jpg': 'Stimuli/037b.jpg',
+        'Stimuli/038a.jpg': 'Stimuli/038b.jpg',
+        'Stimuli/039a.jpg': 'Stimuli/039b.jpg',
+        'Stimuli/040a.jpg': 'Stimuli/040b.jpg',
+        'Stimuli/041a.jpg': 'Stimuli/041b.jpg',
+        'Stimuli/042a.jpg': 'Stimuli/042b.jpg',
+        'Stimuli/043a.jpg': 'Stimuli/043b.jpg',
+        'Stimuli/044a.jpg': 'Stimuli/044b.jpg',
+        'Stimuli/045a.jpg': 'Stimuli/045b.jpg',
+        'Stimuli/046a.jpg': 'Stimuli/046b.jpg',
+        'Stimuli/047a.jpg': 'Stimuli/047b.jpg',
+        'Stimuli/048a.jpg': 'Stimuli/048b.jpg',
+        'Stimuli/049a.jpg': 'Stimuli/049b.jpg',
+        'Stimuli/050a.jpg': 'Stimuli/050b.jpg',
+        'Stimuli/051a.jpg': 'Stimuli/051b.jpg',
+        'Stimuli/052a.jpg': 'Stimuli/052b.jpg',
+        'Stimuli/053a.jpg': 'Stimuli/053b.jpg',
+        'Stimuli/054a.jpg': 'Stimuli/054b.jpg',
+        'Stimuli/055a.jpg': 'Stimuli/055b.jpg',
+        'Stimuli/056a.jpg': 'Stimuli/056b.jpg',
+        'Stimuli/057a.jpg': 'Stimuli/057b.jpg',
+        'Stimuli/058a.jpg': 'Stimuli/058b.jpg',
+        'Stimuli/059a.jpg': 'Stimuli/059b.jpg',
+        'Stimuli/060a.jpg': 'Stimuli/060b.jpg',
+        'Stimuli/061a.jpg': 'Stimuli/061b.jpg',
+        'Stimuli/062a.jpg': 'Stimuli/062b.jpg',
+        'Stimuli/063a.jpg': 'Stimuli/063b.jpg',
+        'Stimuli/064a.jpg': 'Stimuli/064b.jpg',
+        'Stimuli/065a.jpg': 'Stimuli/065b.jpg',
+        'Stimuli/066a.jpg': 'Stimuli/066b.jpg',
+        'Stimuli/067a.jpg': 'Stimuli/067b.jpg',
+        'Stimuli/068a.jpg': 'Stimuli/068b.jpg',
+        'Stimuli/069a.jpg': 'Stimuli/069b.jpg',
+        'Stimuli/070a.jpg': 'Stimuli/070b.jpg',
+        'Stimuli/071a.jpg': 'Stimuli/071b.jpg',
+        'Stimuli/072a.jpg': 'Stimuli/072b.jpg',
+        'Stimuli/073a.jpg': 'Stimuli/073b.jpg',
+        'Stimuli/074a.jpg': 'Stimuli/074b.jpg',
+        'Stimuli/075a.jpg': 'Stimuli/075b.jpg',
+        'Stimuli/076a.jpg': 'Stimuli/076b.jpg',
+        'Stimuli/077a.jpg': 'Stimuli/077b.jpg',
+        'Stimuli/078a.jpg': 'Stimuli/078b.jpg',
+        'Stimuli/079a.jpg': 'Stimuli/079b.jpg',
+        'Stimuli/080a.jpg': 'Stimuli/080b.jpg',
+        'Stimuli/081a.jpg': 'Stimuli/081b.jpg',
+        'Stimuli/082a.jpg': 'Stimuli/082b.jpg',
+        'Stimuli/083a.jpg': 'Stimuli/083b.jpg',
+        'Stimuli/084a.jpg': 'Stimuli/084b.jpg',
+        'Stimuli/085a.jpg': 'Stimuli/085b.jpg',
+        'Stimuli/086a.jpg': 'Stimuli/086b.jpg',
+        'Stimuli/087a.jpg': 'Stimuli/087b.jpg',
+        'Stimuli/088a.jpg': 'Stimuli/088b.jpg',
+        'Stimuli/089a.jpg': 'Stimuli/089b.jpg',
+        'Stimuli/090a.jpg': 'Stimuli/090b.jpg',
+        'Stimuli/091a.jpg': 'Stimuli/091b.jpg',
+        'Stimuli/092a.jpg': 'Stimuli/092b.jpg',
+        'Stimuli/093a.jpg': 'Stimuli/093b.jpg',
+        'Stimuli/094a.jpg': 'Stimuli/094b.jpg',
+        'Stimuli/095a.jpg': 'Stimuli/095b.jpg',
+        'Stimuli/096a.jpg': 'Stimuli/096b.jpg',
+        'Stimuli/097a.jpg': 'Stimuli/097b.jpg',
+        'Stimuli/098a.jpg': 'Stimuli/098b.jpg',
+        'Stimuli/099a.jpg': 'Stimuli/099b.jpg',
+        'Stimuli/100a.jpg': 'Stimuli/100b.jpg',
+        'Stimuli/101a.jpg': 'Stimuli/101b.jpg',
+        'Stimuli/102a.jpg': 'Stimuli/102b.jpg',
+        'Stimuli/103a.jpg': 'Stimuli/103b.jpg',
+        'Stimuli/104a.jpg': 'Stimuli/104b.jpg',
+        'Stimuli/105a.jpg': 'Stimuli/105b.jpg',
+        'Stimuli/106a.jpg': 'Stimuli/106b.jpg',
+        'Stimuli/107a.jpg': 'Stimuli/107b.jpg',
+        'Stimuli/108a.jpg': 'Stimuli/108b.jpg',
+        'Stimuli/109a.jpg': 'Stimuli/109b.jpg',
+        'Stimuli/110a.jpg': 'Stimuli/110b.jpg',
+        'Stimuli/111a.jpg': 'Stimuli/111b.jpg',
+        'Stimuli/112a.jpg': 'Stimuli/112b.jpg',
+        'Stimuli/113a.jpg': 'Stimuli/113b.jpg',
+        'Stimuli/114a.jpg': 'Stimuli/114b.jpg',
+        'Stimuli/115a.jpg': 'Stimuli/115b.jpg',
+        'Stimuli/116a.jpg': 'Stimuli/116b.jpg',
+        'Stimuli/117a.jpg': 'Stimuli/117b.jpg',
+        'Stimuli/118a.jpg': 'Stimuli/118b.jpg',
+        'Stimuli/119a.jpg': 'Stimuli/119b.jpg',
+        'Stimuli/120a.jpg': 'Stimuli/120b.jpg',
+        'Stimuli/121a.jpg': 'Stimuli/121b.jpg',
+        'Stimuli/122a.jpg': 'Stimuli/122b.jpg',
+        'Stimuli/123a.jpg': 'Stimuli/123b.jpg',
+        'Stimuli/124a.jpg': 'Stimuli/124b.jpg',
+        'Stimuli/125a.jpg': 'Stimuli/125b.jpg',
+        'Stimuli/126a.jpg': 'Stimuli/126b.jpg'    
+    };
+
+    // Upload the new image list 
+    var new_stimuli = ['Stimuli/050_new.jpg', 'Stimuli/062_new.jpg', 'Stimuli/053_new.jpg', 'Stimuli/054_new.jpg', 'Stimuli/061_new.jpg', 'Stimuli/059_new.jpg', 'Stimuli/055_new.jpg', 'Stimuli/063_new.jpg', 'Stimuli/049_new.jpg', 'Stimuli/064_new.jpg', 'Stimuli/058_new.jpg', 'Stimuli/057_new.jpg', 'Stimuli/046_new.jpg', 'Stimuli/047_new.jpg', 'Stimuli/048_new.jpg', 'Stimuli/056_new.jpg', 'Stimuli/051_new.jpg', 'Stimuli/060_new.jpg', 'Stimuli/052_new.jpg','Stimuli/022_new.jpg', 'Stimuli/040_new.jpg', 'Stimuli/037_new.jpg', 'Stimuli/044_new.jpg', 'Stimuli/001_new.jpg', 'Stimuli/016_new.jpg', 'Stimuli/034_new.jpg', 'Stimuli/042_new.jpg', 'Stimuli/024_new.jpg', 'Stimuli/021_new.jpg', 'Stimuli/006_new.jpg', 'Stimuli/002_new.jpg', 'Stimuli/018_new.jpg', 'Stimuli/019_new.jpg', 'Stimuli/023_new.jpg', 'Stimuli/014_new.jpg', 'Stimuli/033_new.jpg', 'Stimuli/036_new.jpg', 'Stimuli/011_new.jpg', 'Stimuli/007_new.jpg', 'Stimuli/032_new.jpg', 'Stimuli/028_new.jpg', 'Stimuli/030_new.jpg', 'Stimuli/035_new.jpg', 'Stimuli/043_new.jpg', 'Stimuli/045_new.jpg', 'Stimuli/004_new.jpg', 'Stimuli/020_new.jpg', 'Stimuli/031_new.jpg', 'Stimuli/013_new.jpg', 'Stimuli/015_new.jpg', 'Stimuli/027_new.jpg', 'Stimuli/025_new.jpg', 'Stimuli/003_new.jpg', 'Stimuli/029_new.jpg', 'Stimuli/008_new.jpg', 'Stimuli/005_new.jpg', 'Stimuli/010_new.jpg', 'Stimuli/041_new.jpg', 'Stimuli/009_new.jpg', 'Stimuli/038_new.jpg', 'Stimuli/039_new.jpg', 'Stimuli/012_new.jpg', 'Stimuli/026_new.jpg', 'Stimuli/017_new.jpg'];
+    shuffle(new_stimuli);
+
+    // Slice out 32 images for each session
+    var session_1_new = new_stimuli.slice(0, 32);
+    var session_2_new = new_stimuli.slice(32, 64);
+
+    // Upload the practice trial images
+    var demo_stimuli =['Stimuli/demo_A.jpg', 'Stimuli/demo_B.jpg', 'Stimuli/demo_C.jpg','Stimuli/demo_D.jpg','Stimuli/demo_E.jpg','Stimuli/demo_F.jpg','Stimuli/demo_Arep.jpg','Stimuli/demo_Crep.jpg','Stimuli/demo_Erep.jpg'];
+
+    // The experiment begins
+    var preload = {
+        type: jsPsychPreload,
+        images: stimuli.concat(rep_stimuli,lure_stimuli,new_stimuli,demo_stimuli)
+    };
+    timeline.push(preload);
+    
+    timeline.push({
+    type: jsPsychFullscreen,
+    fullscreen_mode: true
+    });
+
+    var welcome = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `<p style="font-size: 30px;"><b> Welcome to the experiment! Press any key to begin.</b></p>`,
+    };
+    timeline.push(welcome);
+
+    var consent = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `<img src='Stimuli/cognition.run_consent.png'>`,
+        choices: ['Continue'],
+        data: { isRelevant: true },
+        on_finish: function(data) {
+            // Convert imageTriads array to a string representation for CSV
+            data.imageTriads = JSON.stringify(imageTriads);
+    }
+    };
+    timeline.push(consent);
+
+    var pre_learn_practice_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 2; text-align: center;">
+            In this experiment, you will go through <b>two learning-testing cycles</b> that follow the same procedure.
+            <br><br>
+            Each cycle begins with the <span style="color: #e67f00;">Learning Phase</span>, in which you will first <b>learn</b> some <b>paired object pictures</b>. This is followed by the <span style="color: #0082e6;">Testing Phase</span>, in which you will then <b>be tested on</b> the <b>object pairs</b> you have learned. 
+            <br><br>
+            The above describes <b>a complete learning-testing cycle</b>, and again, there are <b>TWO such cycles</b> in total for this experiment.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            During the <span style="color: #e67f00;">Learning Phase</span>, each pair of objects will appear on the screen for <b>3 seconds</b>. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src='Stimuli/demo_B.jpg' style='max-width:45%; height:auto; display:inline-block; padding-right:10px;' />
+            <img src='Stimuli/demo_C.jpg' style='max-width:45%; height:auto; display:inline-block;' />
+        </div>`,      
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Your task is to try your best to <b>memorize</b> these pairs, because you will be tested on them later. 
+            <br><br>
+            Please <b>pay attention</b> to each pair of objects that appear on the screen, as each pair will <b>only appear once</b>. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin the <span style="color: #e67f00;">Learning Phase</span> of <b>Cycle One</b> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_learn_practice_instruction_trial);
+
+    // Create and add the encoding trials to the timeline
+    var session_1_EncodingTrials = EncodingTrials(session_1);
+
+    session_1_EncodingTrials.forEach(trial => {
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+        
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Image pair trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div style='display: flex; justify-content: center;'><img src='${trial.left}' style='padding-right: 10px;' /><img src='${trial.right}' /></div>`,
+            choices: "NO_KEYS",
+            trial_duration: 3000
+        });
+    });
+   
+    // console.log(session_1_EncodingTrials);
+
+    var pre_assinf_practice_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                <p>You have completed the <span style="color: #e67f00;">Learning Phase</span> of <b>Cycle One</b>!</p>
+                <p>You will now begin the <span style="color: #0082e6;">Testing Phase</span> of <b>Cycle One</b>, which consists of <b>four parts</b>:</p>
+                <ul style="text-align: left; list-style-position: inside;">
+                    <li><span style="color: #91cc79;">Part 1</span> is the longest and takes about 7-10 minutes.</li>
+                    <li><span style="color: #cc79c1;">Part 2</span> and <span style="color: #7981cc;">Part 3</span> combined take about 3-5 minutes.</li>
+                    <li><span style="color: #79ccbd;">Part 4</span> takes about 5-8 minutes.</li>
+                </ul>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                In <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, you will be tested on <b>matching the objects</b> you have just learned. A cue image from any given object pair will be displayed in the center of the screen, and two options will be displayed side-by-side at the bottom. 
+                <br><br>
+                Below is an example:
+                <br>
+                <img src="Stimuli/demo_B.jpg" alt="Cue Image" style="display:inline-block; margin: 0 auto; max-width:40%; max-height:400px">
+                <br>
+                <div style="display:inline-block; justify-content: center; align-items: center;">
+                    <img src="Stimuli/demo_F.jpg" alt="Left Choice Image" style="max-width:40%; max-height:400px; margin-right: 20px;">
+                    <img src="Stimuli/demo_C.jpg" alt="Right Choice Image" style="max-width:40%; max-height:400px; margin-left: 20px;">
+                </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                Use the <b>arrow keys</b> (left arrow key: image on the left; right arrow key: image on the right) to select one of the two options that you think <b>is paired with</b> the cue image. 
+                <br><br>
+                In each trial, you have <b>10 seconds</b> to make a selection. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                After making this choice in each trial, you will see the following question: 
+                <br><br>
+                <br><br>
+                <b>"Was your chosen object directly or indirectly associated with the cue object?"</b>
+                <br><br>
+                <div style="text-align:center; margin-top: 70px;">
+                    <strong><span style="font-size: 32px; margin-right: 100px;">Direct</span></strong>
+                    <strong><span style="font-size: 32px; margin-left: 50px;">Indirect</span></strong>
+                </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                Select "Direct" if you think you <b>directly saw</b> the two images <b>as a pair</b> during the <span style="color: #e67f00;">Learning Phase</span>. Select "Indirect" if you think the cue image is <b>indirectly associated to</b> the image you just chose <b>through a shared, third image</b>. In other words, choose "Indirect" only if you think you <b>did not see</b> the cue image directly paired with the image you chose during the <span style="color: #e67f00;">Learning Phase</span>, but you know they are <b>each paired with a common third image</b>. 
+                <br><br>
+                Use the <b>arrow keys</b> (left arrow: “Direct”; right arrow: “Indirect”) to make your choice. 
+                <br><br>
+                You have <b>10 seconds</b> to make a selection. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                Click next to proceed to the practice trials.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_assinf_practice_instruction_trial);
+
+    // Practice trial before the associative inference test
+    var practice_trial = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function() {
+            var html_content = "<p style='font-size: 30px;line-height: 1.5;'>Suppose that you learned the two pairs of objects below during the learning phase.</p>";
+            html_content += "<div style='font-size:30px;line-height: 1.5;text-align:center; margin-top: 20px;'>Please memorize them and then complete the practice trials that follow. Only if you get <b>100% correct</b> will you be able to finish this exercise and move on to the rest of this experiment. <br><br> Press the space bar to continue when you are ready.</p>";
+            html_content += "<div style='display:flex; justify-content:space-around; align-items:center; margin-top:20px;'>";
+            html_content += "<div>"; // Container for the first pair
+            html_content += "<img src='Stimuli/demo_A.jpg' style='max-width:40%; max-height:400px; margin-right:10px; object-fit: contain;' />"; 
+            html_content += "<img src='Stimuli/demo_B.jpg' style='max-width:50%; max-height:500px; object-fit: contain;' />"; 
+            html_content += "</div>";
+            html_content += "<div style='width:10%;'></div>"; // Spacer between pairs
+            html_content += "<div>"; // Container for the second pair
+            html_content += "<img src='Stimuli/demo_B.jpg' style='max-width:40%; max-height:400px; margin-right:10px; object-fit: contain;' />"; 
+            html_content += "<img src='Stimuli/demo_C.jpg' style='max-width:40%; max-height:400px; object-fit: contain;' />"; 
+            return html_content;
+        },
+        choices: [' ']
+    };
+    timeline.push(practice_trial);
+
+    // Define the trials outside of the timeline (AB Choice)
+    var wasResponseCorrect_choiceAB;
+
+    var fixation_trial = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+        choices: "NO_KEYS",
+        trial_duration: 500
+    };
+
+    var demo_choice_trial_AB = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function() {
+            var cueHtml = `<div class='cue' style='text-align:center;'><img src='Stimuli/demo_A.jpg' /></div>`;
+            var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between;'>
+                                <div class='choice left'><img src='Stimuli/demo_B.jpg' /></div>
+                                <div class='choice right'><img src='Stimuli/demo_D.jpg' /></div>
+                                </div>`;
+            return cueHtml + choicesHtml;
+        },
+        choices: ['ArrowLeft', 'ArrowRight'],
+        on_finish: function(data) {
+            // Reset the flag at the start of each iteration
+            wasResponseCorrect_choiceAB = undefined;
+            wasResponseCorrect_choiceAB = (data.response === 'arrowleft');
+        },
+        trial_duration: 10000 // 10 seconds to respond
+    };
+
+    var feedback_trial_correct = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p style='color:green; text-align:center;font-size:32px;'>Correct! Press the space bar to continue.</p>",
+        choices: " "
+    };
+
+    var feedback_trial_wrong = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p style='color:red;line-height:1.5;text-align:center;font-size:30px;'>Wrong! Please restudy the object pairs below. Press the space bar to do this practice trial again.</p>" +
+                    "<div style='display:flex; justify-content:center; align-items:center;'>" +
+                    "<img src='Stimuli/demo_A.jpg' style='max-width:25%; max-height:250px; object-fit: contain; margin-right: 8px;' />" +
+                    "<img src='Stimuli/demo_B.jpg' style='max-width:25%; max-height:250px; object-fit: contain; margin-right: 150px;' />" +
+                    "<img src='Stimuli/demo_B.jpg' style='max-width:25%; max-height:250px; object-fit: contain; margin-right: 8px;' />" +
+                    "<img src='Stimuli/demo_C.jpg' style='max-width:25%; max-height:250px; object-fit: contain;' />" +
+                    "</div>",
+        choices: " "
+    };
+
+    // Function to create the looped part of the experiment (AB Choice)
+    function createLoopedTimeline_choiceAB() {
+        return [
+            fixation_trial,
+            demo_choice_trial_AB,
+            {
+                timeline: [feedback_trial_correct],
+                conditional_function: function() {
+                    return wasResponseCorrect_choiceAB;
+                }
+            },
+            {
+                timeline: [feedback_trial_wrong],
+                conditional_function: function() {
+                    return !wasResponseCorrect_choiceAB;
+                }
+            }
+        ];
+    }
+        
+    // Push the loop onto the timeline (AB Choice)
+    timeline.push({
+        timeline: createLoopedTimeline_choiceAB(),
+        loop_function: function() {
+            // This function is called at the end of each loop iteration
+            // Check if we need to repeat the loop
+            return !wasResponseCorrect_choiceAB;
+        }
+    });
+
+    // Define the trials outside of the timeline (AB Source)
+    var wasResponseCorrect_sourceAB;
+
+    var demo_source_trial_AB = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p style="font-size: 30px; line-height: 3; margin-bottom: 100px;"><b>Was your chosen object directly or indirectly associated with the cue object?</b></p>`,
+        choices: ['ArrowLeft', 'ArrowRight'],
+        prompt: `<div style='width: 100%; display: flex; text-align:center; justify-content: space-around;'>
+                <div style='font-size: 32px;'><b>Direct</b></div>
+                <div style='font-size: 32px;'><b>Indirect</b></div>
+            </div>`,
+        on_finish: function(data) {
+            // Reset the flag at the start of each iteration
+            wasResponseCorrect_sourceAB = undefined;
+            wasResponseCorrect_sourceAB = (data.response === 'arrowleft');
+        },
+        trial_duration: 10000
+    }
+
+    var incorrectFeedbackTrial_AB = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `<p style='color:red;line-height:1.5;text-align:center;font-size:30px;'><b>Wrong!</b> Your chosen object is <b>directly associated with</b> the cue image. These two images appeared as an object pair in the learning phase. Press the space bar to do this trial again.</p>`,
+    choices: " "
+    };
+
+    // Function to create the looped part of the experiment (AB Source)
+    function createLoopedTimeline_sourceAB() {
+        return [
+            fixation_trial,
+            demo_source_trial_AB,
+            {
+                timeline: [feedback_trial_correct],
+                conditional_function: function() {
+                    return wasResponseCorrect_sourceAB;
+                }
+            },
+            {
+                timeline: [incorrectFeedbackTrial_AB],
+                conditional_function: function() {
+                    return !wasResponseCorrect_sourceAB;
+                }
+            }
+        ];
+    }
+        
+    // Push the loop onto the timeline (AB Source)
+    timeline.push({
+        timeline: createLoopedTimeline_sourceAB(),
+        loop_function: function() {
+            // This function is called at the end of each loop iteration
+            // Check if we need to repeat the loop
+            return !wasResponseCorrect_sourceAB;
+        }
+    });
+
+    // Define the trials outside of the timeline (AC Choice)
+    var wasResponseCorrect_choiceAC;
+
+    var demo_choice_trial_AC = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function() {
+            var cueHtml = `<div class='cue' style='text-align:center;'><img src='Stimuli/demo_C.jpg' /></div>`;
+            var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between;'>
+                                <div class='choice left'><img src='Stimuli/demo_A.jpg' /></div>
+                                <div class='choice right'><img src='Stimuli/demo_E.jpg' /></div>
+                                </div>`;
+            return cueHtml + choicesHtml;
+        },
+        choices: ['ArrowLeft', 'ArrowRight'],
+        on_finish: function(data) {
+            // Reset the flag at the start of each iteration
+            wasResponseCorrect_choiceAC = undefined;
+            wasResponseCorrect_choiceAC = (data.response === 'arrowleft');
+        },
+        trial_duration: 10000 // 10 seconds to respond
+    };
+
+    // Function to create the looped part of the experiment (AC Choice)
+    function createLoopedTimeline_choiceAC() {
+        return [
+            fixation_trial,
+            demo_choice_trial_AC,
+            {
+                timeline: [feedback_trial_correct],
+                conditional_function: function() {
+                    return wasResponseCorrect_choiceAC;
+                }
+            },
+            {
+                timeline: [feedback_trial_wrong],
+                conditional_function: function() {
+                    return !wasResponseCorrect_choiceAC;
+                }
+            }
+        ];
+    }
+        
+    // Push the loop onto the timeline (AC Choice)
+    timeline.push({
+        timeline: createLoopedTimeline_choiceAC(),
+        loop_function: function() {
+            // This function is called at the end of each loop iteration
+            // Check if we need to repeat the loop
+            return !wasResponseCorrect_choiceAC;
+        }
+    });
+
+    // Define the trials outside of the timeline (AC Source)
+    var wasResponseCorrect_sourceAC;
+
+    var demo_source_trial_AC = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p style="font-size: 30px; line-height: 3; margin-bottom: 100px;"><b>Was your chosen object directly or indirectly associated with the cue object?</b></p>`,
+        choices: ['ArrowLeft', 'ArrowRight'],
+        prompt: `
+            <div style='width: 100%; display: flex; text-align:center; justify-content: space-around;'>
+                <div style='font-size: 32px;'><b>Direct</b></div>
+                <div style='font-size: 32px;'><b>Indirect</b></div>
+            </div>`,
+        on_finish: function(data) {
+            // Reset the flag at the start of each iteration
+            wasResponseCorrect_sourceAC = undefined;
+            wasResponseCorrect_sourceAC = (data.response === 'arrowright');
+        },
+        trial_duration: 10000
+    }
+
+    var incorrectFeedbackTrial_AC = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `<p style='color:red;line-height:1.5;text-align:center;font-size:30px;'><b>Wrong!</b> Your chosen object is <b>NOT directly associated with</b> the cue image. These two images are indirectly related through a shared, third image (image of the insulated crocodile clips). Press the space bar to do this trial again.</p>`,
+    choices: " "
+    };
+
+    // Function to create the looped part of the experiment (AC Source)
+    function createLoopedTimeline_sourceAC() {
+        return [
+            fixation_trial,
+            demo_source_trial_AC,
+            {
+                timeline: [feedback_trial_correct],
+                conditional_function: function() {
+                    return wasResponseCorrect_sourceAC;
+                }
+            },
+            {
+                timeline: [incorrectFeedbackTrial_AC],
+                conditional_function: function() {
+                    return !wasResponseCorrect_sourceAC;
+                }
+            }
+        ];
+    }
+        
+    // Push the loop onto the timeline (AC Source)
+    timeline.push({
+        timeline: createLoopedTimeline_sourceAC(),
+        loop_function: function() {
+            // This function is called at the end of each loop iteration
+            // Check if we need to repeat the loop
+            return !wasResponseCorrect_sourceAC;
+        }
+    });
+
+    var instruction_trial_6 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                    You finished the practice trials! Please note that you <b>will not</b> receive any feedback during the <span style="color: #0082e6;">Testing Phase</span> as you did during the practice trials.  
+                    <br><br>
+                    If you are ready to begin <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, press the space bar.                
+                </div>`,
+        choices: [' '],
+    };
+    timeline.push(instruction_trial_6);
+
+    // Function to prepare associative inference lure lists 
+    function assinf_set_lure(allTriads, currentTriadItem, categoryIndex) {
+        // Filter out the current triad item and flatten the array of the specific category
+        let potentialLures = allTriads.flatMap(triad => 
+            triad[categoryIndex] !== currentTriadItem ? triad[categoryIndex] : []
+        );
+        
+        // Shuffle the potential lures to ensure randomness
+        shuffle(potentialLures);
+        
+        // Return a random item from the shuffled potential lures
+        return potentialLures[Math.floor(Math.random() * potentialLures.length)];
+    }
+
+    // Function to prepare associative inference testing trials
+    function assinf_TestingTrials(triads) {
+        let testingTrials = [];
+        let triadId = 0;
+
+        triads.forEach(triad => {
+            // Generate a unique identifier for the triad
+            triadId += 1; 
+
+            // Randomly select the cue for each trial type
+            let cuePositionAC = Math.random() < 0.5 ? "A" : "C";
+            let answerPositionAC = cuePositionAC === "A" ? "C" : "A";
+            let cueForAC = cuePositionAC === "A" ? triad[0] : triad[2];
+
+            let cuePositionAB = Math.random() < 0.5 ? "A" : "B";
+            let answerPositionAB = cuePositionAB === "A" ? "B" : "A";
+            let cueForAB = cuePositionAB === "A" ? triad[0] : triad[1];
+
+            let cuePositionBC = Math.random() < 0.5 ? "B" : "C";
+            let answerPositionBC = cuePositionBC === "B" ? "C" : "B";
+            let cueForBC = cuePositionBC === "B" ? triad[1] : triad[2];
+
+            // Correct choice based on selected cue
+            let correctChoiceForAC = cueForAC === triad[0] ? triad[2] : triad[0];
+            let correctChoiceForAB = cueForAB === triad[0] ? triad[1] : triad[0];
+            let correctChoiceForBC = cueForBC === triad[1] ? triad[2] : triad[1];
+
+            // Set the lure based on correct choice  
+            let lureForAC = cueForAC === triad[0] ? assinf_set_lure(triads, correctChoiceForAC, 2) : assinf_set_lure(triads, correctChoiceForAC, 0); 
+            let lureForAB = cueForAB === triad[0] ? assinf_set_lure(triads, correctChoiceForAB, 1) : assinf_set_lure(triads, correctChoiceForAB, 0); 
+            let lureForBC = cueForBC === triad[1] ? assinf_set_lure(triads, correctChoiceForBC, 2) : assinf_set_lure(triads, correctChoiceForBC, 1); 
+
+            // A-C Inference Test Trial
+            testingTrials.push({
+                type: jsPsychHtmlKeyboardResponse,
+                cue: cueForAC,
+                cuePosition: cuePositionAC,
+                answerPosition: answerPositionAC,
+                choices: [correctChoiceForAC, lureForAC],
+                correct: correctChoiceForAC,
+                triadNum: triad[3],
+                trialType: 'AC',
+                triadId: triadId 
+            });
+
+            // A-B Direct Test Trial
+            testingTrials.push({
+                type: jsPsychHtmlKeyboardResponse,
+                cue: cueForAB,
+                cuePosition: cuePositionAB,
+                answerPosition: answerPositionAB,
+                choices: [correctChoiceForAB, lureForAB],
+                correct: correctChoiceForAB,
+                triadNum: triad[3],
+                trialType: 'AB',
+                triadId: triadId 
+            });
+
+            // B-C Direct Test Trial
+            testingTrials.push({
+                type: jsPsychHtmlKeyboardResponse,
+                cue: cueForBC,
+                cuePosition: cuePositionBC,
+                answerPosition: answerPositionBC,
+                choices: [correctChoiceForBC, lureForBC],
+                correct: correctChoiceForBC,
+                triadNum: triad[3],
+                trialType: 'BC',
+                triadId: triadId 
+            });
+        });
+        
+        // Shuffle all trials randomly
+        shuffle(testingTrials);
+
+        // Reorder trials with conditions
+        let reorderedTrials = [];
+        let testedTriads = new Set();
+
+        testingTrials.forEach((trial, index) => {
+            if (trial.trialType === 'AC') {
+                reorderedTrials.push(trial);
+                testedTriads.add(trial.triadId);
+            } else {
+                if (testedTriads.has(trial.triadId)) {
+                    reorderedTrials.push(trial);
+                } else {
+                    // Find the corresponding AC trial and test it first
+                    let acTrialIndex = testingTrials.findIndex(t => t.trialType === 'AC' && t.triadId === trial.triadId);
+                    let acTrial = testingTrials[acTrialIndex];
+                    reorderedTrials.push(acTrial);
+                    testingTrials.splice(acTrialIndex, 1); 
+                    testedTriads.add(trial.triadId);
+
+                    // Move the current trial to a random position after its current index
+                    let randomIndex = Math.floor(Math.random() * (testingTrials.length - index)) + index;
+                    testingTrials.splice(randomIndex, 0, trial);
+                }
+            }
+        });
+        return reorderedTrials;
+    }
+
+    // Create and add associative inference testing trials to the timeline
+    var session_1_assinf_TestingTrials = assinf_TestingTrials(session_1);
+
+    session_1_assinf_TestingTrials.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Testing choice trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueHtml = `<div class='cue' style='text-align:center;'><img src='${trial.cue}' /></div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between;'>
+                                        <div class='choice left'><img src='${trial.choices[leftChoiceIndex]}' /></div>
+                                        <div class='choice right'><img src='${trial.choices[rightChoiceIndex]}' /></div>
+                                    </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    let trialType = trial.trialType; 
+                    data.session = '0';
+                    data.assinfTrialType = trialType;
+                    data.cuePosition = trial.cuePosition;
+                    data.cueImage = trial.cue;
+                    data.otherPosition = trial.answerPosition;
+                    data.answerImage = trial.correct;
+                    data.triadID = trial.triadNum;
+                    data.responseCorrectChoice = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+
+        // Testing source trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<p style="font-size: 30px; line-height: 3; margin-bottom: 100px;"><b>Was your chosen object directly or indirectly associated with the cue object?</b></p>`,
+            choices: ['ArrowLeft', 'ArrowRight'],
+            prompt: `
+                <div style='width: 100%; display: flex; text-align:center; justify-content: space-around;'>
+                <div style='font-size: 32px;'><b>Direct</b></div>
+                <div style='font-size: 32px;'><b>Indirect</b></div>
+                </div>`,
+            data: { isRelevant: true },
+            on_finish: function(data) {
+                let trialType = trial.trialType; 
+                data.session = '0';
+                data.assinfTrialType = trialType;
+                data.cuePosition = trial.cuePosition;
+                data.cueImage = trial.cue;
+                // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                let otherLetter = trialType.split('').find(letter => letter !== trial.cuePosition);
+                data.otherPosition = otherLetter;
+                data.answerImage = trial.correct;
+                data.triadID = trial.triadNum;
+                data.responseCorrectSource = (trialType === 'AC' && data.response === 'arrowright') || 
+                                        (trialType !== 'AC' && data.response === 'arrowleft');
+            },
+            trial_duration: 10000
+        });
+    });
+
+    // console.log(session_1_assinf_TestingTrials);
+
+    var pre_sem_practice_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Now that you have completed <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, <span style="color: #cc79c1;">Part 2</span> will follow.   
+            <br><br>
+            You will see a <b>word</b> appear in the center as a cue and <b>two more words</b> at the bottom for you to choose from. All the words you will see are the <b>names</b> of the objects you have seen in pairs during the <span style="color: #e67f00;">Learning Phase</span>. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <div style="font-size: 50px;"><b>Hourglass</b></div>
+            <br><br>
+            <div style="display: flex; justify-content: space-around; align-items: center;">
+                <div style="font-size: 50px;"><b>Rooster</b></div>
+                <div style="font-size: 50px;"><b>Bow Tie</b></div>
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: word on the left; right arrow: word on the right) to select the word you think <b>is associated with</b> the cue word. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #cc79c1;">Part 2</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_sem_practice_instruction_trial);
+
+    // Function to display semantic labels of the images
+    function displayImageName(imagePath) {
+        // Extract the part of the name after '_'
+        let imageName = imagePath.split('_')[1]; // This splits the path at '_' and takes the second part
+
+        // Remove the file extension
+        let nameWithoutExtension = imageName.split('.')[0];
+
+        // Return the name
+        return nameWithoutExtension;
+    }
+
+    // Function to prepare representation testing trials
+    function rep_TestingTrials(triads) {
+        let testingTrials = [];
+        let triadId = 0;
+
+        triads.forEach(triad => {
+            // Generate a unique identifier for the triad
+            triadId += 1; 
+
+            // Randomly select the cue for each trial type
+            let chosenPosition = Math.random() < 0.5 ? "A" : "C";
+            let cueForAC = chosenPosition === "A" ? triad[0] : triad[2];
+
+            // Correct choice based on selected cue
+            let correctChoiceForAC = cueForAC === triad[0] ? triad[2] : triad[0];
+
+            // Set the lure based on correct choice  
+            let lureForAC = cueForAC === triad[0] ? assinf_set_lure(triads, correctChoiceForAC, 2) : assinf_set_lure(triads, correctChoiceForAC, 0); 
+
+            // A-C Inference Test Trial
+            testingTrials.push({
+                type: jsPsychHtmlKeyboardResponse,
+                cue: cueForAC,
+                cuePosition: chosenPosition,
+                choices: [correctChoiceForAC, lureForAC],
+                correct: correctChoiceForAC,
+                triadNum: triad[3],
+                trialType: 'AC',
+                triadId: triadId 
+            });
+        });
+
+        // Shuffle all trials randomly
+        shuffle(testingTrials);
+
+        // Return only 14 trials, as 7 trials are not tested as controls at this stage
+        return testingTrials.slice(0, 14);
+    }
+
+    // Create two types of representation testing trials 
+    var session_1_sem_rep = rep_TestingTrials(session_1_repTriads).slice(0, 7);
+    var session_1_vis_rep = rep_TestingTrials(session_1_repTriads).slice(7, 14);
+
+    // Add semantic representation testing trials to the timeline
+    session_1_sem_rep.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Semantic representation trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueName = displayImageName(trial.cue);
+                var choice1Name = displayImageName(trial.choices[leftChoiceIndex]);
+                var choice2Name = displayImageName(trial.choices[rightChoiceIndex]);
+
+                var cueHtml = `<div class='cue' style='text-align:center; font-size: 70px; margin-bottom: 100px;'>${cueName}</div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-around; font-size: 70px;'>
+                                        <div class='choice left' style='margin-right: 100px;'>${choice1Name}</div>
+                                        <div class='choice right' style='margin-left: 100px;'>${choice2Name}</div>
+                                    </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    data.session = '0';
+                    data.cuePosition_sem = trial.cuePosition;
+                    data.cueImage_sem = trial.cue;
+                    // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                    let otherLetter = trial.trialType.split('').find(letter => letter !== trial.cuePosition);
+                    data.otherPosition_sem = otherLetter;
+                    data.answerImage_sem = trial.correct;
+                    data.triadID_sem = trial.triadNum;
+                    data.responseCorrectSem = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+    });
+
+    var pre_vis_practice_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            <span style="color: #cc79c1;">Part 2</span> of the <span style="color: #0082e6;">Testing Phase</span> is over. 
+            <br><br>
+            Now, in <span style="color: #7981cc;">Part 3</span>, your task <b>will be similar to</b> <span style="color: #cc79c1;">Part 2</span> that you have just successfully completed. 
+            <br><br>
+            However, instead of words, you will be presented with some <b>new images</b> of objects you have learned that are embedded in <b>an everyday scene</b>.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            You will see an <b>image</b> appear in the center as a cue, and <b>two more images</b> at the bottom for you to choose from. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src="Stimuli/demo_Arep.jpg" alt="Cue Image" style="display:inline-block; margin: 0 auto; max-width:40%; max-height:400px">
+            <br>
+            <div style="display:inline-block; justify-content: center; align-items: center;">
+                <img src="Stimuli/demo_Crep.jpg" alt="Left Choice Image" style="max-width:40%; max-height:400px; margin-right: 20px;">
+                <img src="Stimuli/demo_Erep.jpg" alt="Right Choice Image" style="max-width:40%; max-height:400px; margin-left: 20px;">
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: image on the left; right arrow: image on the right) to select the image you think <b>is associated with</b> the cue image. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #7981cc;">Part 3</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_vis_practice_instruction_trial);
+
+    // Add visual representation testing trials to the timeline
+    session_1_vis_rep.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Visual Representation trial
+       timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueHtml = `<div class='cue' style='text-align:center;'><img src='${trial.cue}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between; align-items:center;'>
+                                <div class='choice left'><img src='${trial.choices[leftChoiceIndex]}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>
+                                <div class='choice right'><img src='${trial.choices[rightChoiceIndex]}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>
+                            </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    data.session = '0';
+                    data.cuePosition_vis = trial.cuePosition;
+                    data.cueImage_vis = trial.cue;
+                    // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                    let otherLetter = trial.trialType.split('').find(letter => letter !== trial.cuePosition);
+                    data.otherPosition_vis = otherLetter;
+                    data.answerImage_vis = trial.correct;
+                    data.triadID_vis = trial.triadNum;
+                    data.responseCorrectVis = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+    });
+
+    // console.log(session_1_sem_rep);
+    // console.log(session_1_vis_rep);
+
+    var pre_rec_practice_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            You are almost done with <b>Cycle One</b>!  
+            <br><br>
+            In <span style="color: #79ccbd;">Part 4</span> of the <span style="color: #0082e6;">Testing Phase</span>, you will see the <b>images</b> of the objects appear on the screen <b>one by one</b>. 
+            <br><br>
+            Each image will <b>only appear once</b>, and you should determine whether the image is "Old," "Similar," or "New." 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src="Stimuli/demo_B.jpg" style="display:inline-block; margin: 0 auto; max-width:25%; max-height:250px">
+            <div style="text-align:center; margin-top: 50px;">
+                <strong><span style="font-size: 32px; margin-right: 50px;">Old</span></strong>
+                <strong><span style="font-size: 32px; margin-right: 50px;">Similar</span></strong>
+                <strong><span style="font-size: 32px;">New</span></strong>
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Select "Old" if you think the image on the screen <b>has appeared</b> in any of the given <b>object pairs</b> in the <span style="color: #e67f00;">Learning Phase</span>. 
+            <br><br>
+            Select "Similar" if you think the image <b>is similar to</b> an image that <b>has appeared</b> in the <span style="color: #e67f00;">Learning Phase</span>, <b>BUT</b> with a <b>different</b> number/ color/ angle/ type. 
+            <br><br>
+            Select "New" if you think you <b>have never seen</b> the image in the <span style="color: #e67f00;">Learning Phase</span>.    
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: “Old”; down arrow: “Similar”; right arrow: “New”) to make your choice. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,  
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #79ccbd;">Part 4</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_rec_practice_instruction_trial);
+
+    function prepareRecImages(session) {
+        // Shuffling the triads in session data
+        shuffle(session);
+
+        // Splitting session into 3 groups of 7 triads each
+        const group1 = session.slice(0, 7);
+        const group2 = session.slice(7, 14);
+        const group3 = session.slice(14, 21);
+
+        // Old array: first image from group1, second from group2, third from group3
+        const oldArray = group1.map(triad => ({ image: triad[0], position: 'A', triadNum: triad[3] }))
+                            .concat(group2.map(triad => ({ image: triad[1], position: 'B', triadNum: triad[3] })))
+                            .concat(group3.map(triad => ({ image: triad[2], position: 'C', triadNum: triad[3] })))
+                            .concat(group1.map(triad => ({ image: triad[1], position: 'B', triadNum: triad[3] })).slice(0, 4))
+                            .concat(group2.map(triad => ({ image: triad[2], position: 'C', triadNum: triad[3] })).slice(0, 3))
+                            .concat(group3.map(triad => ({ image: triad[0], position: 'A', triadNum: triad[3] })).slice(0, 4));
+
+        // Lure array: third image from group1, first from group2, second from group3
+        const lureArray = group1.map(triad => ({ image: triad[2], position: 'C', triadNum: triad[3] }))
+                            .concat(group2.map(triad => ({ image: triad[0], position: 'A', triadNum: triad[3] })))
+                            .concat(group3.map(triad => ({ image: triad[1], position: 'B', triadNum: triad[3] })))
+                            .concat(group1.map(triad => ({ image: triad[1], position: 'B', triadNum: triad[3] })).slice(0, 3))
+                            .concat(group2.map(triad => ({ image: triad[2], position: 'C', triadNum: triad[3] })).slice(0, 4))
+                            .concat(group3.map(triad => ({ image: triad[0], position: 'A', triadNum: triad[3] })).slice(0, 3));
+
+        return [oldArray, lureArray];
+    }
+
+    // Prepare the images for the recognition memory test
+    let [session_1_old, session_1_placeholder_lure] = prepareRecImages(session_1);
+    let session_1_lure = session_1_placeholder_lure.map(item => ({ image: mapping_lure[item.image], position: item.position, triadNum: item.triadNum }));
+
+    // Combine all images into one array with their corresponding correct responses
+    let combinedRecImages_session_1 = [].concat(
+        session_1_old.map(item => ({ image: item.image, position: item.position, triadNum: item.triadNum, correctResponse: 'ArrowLeft', trialType: 'Old' })), // 'Old' is correct
+        session_1_lure.map(item => ({ image: item.image, position: item.position, triadNum: item.triadNum, correctResponse: 'ArrowDown', trialType: 'Lure' })), // 'Similar' is correct
+        session_1_new.map(image => ({ image: image, position: 'New', triadNum: 'New', correctResponse: 'ArrowRight', trialType: 'New' })) // 'New' is correct
+    );
+
+    // Randomize the order of combined images
+    shuffle(combinedRecImages_session_1);
+
+    // Add recognition trials to the timeline
+    combinedRecImages_session_1.forEach(trial => {
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+        
+        // Recognition Memory trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<img src="' + trial.image + '" style="display:block; margin:auto; max-width:80%; max-height:80vh; object-fit: contain;">' +
+                    '<div style="text-align:center; margin-top: 50px;">' +
+                    '<strong><span style="font-size: 32px; margin-right: 50px;">Old</span></strong>' +
+                    '<strong><span style="font-size: 32px; margin-right: 50px;">Similar</span></strong>' +
+                    '<strong><span style="font-size: 32px;">New</span></strong>',
+            choices: ['ArrowLeft', 'ArrowDown', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                var correctChoice = trial.correctResponse;
+                data.session = '0';
+                data.recTrialType = trial.trialType;
+                data.recTrialPosition = trial.position;
+                data.recImage = trial.image;
+                data.recTriadID = trial.triadNum;
+                data.responseCorrectRec = jsPsych.pluginAPI.compareKeys(data.response, correctChoice);
+            },
+            trial_duration: 10000
+        });
+    });
+
+    // console.log(combinedRecImages_session_1);
+
+    var encoding_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 2; text-align: center;">
+            Great! You have completed all four parts of the <span style="color: #0082e6;">Testing Phase</span> for <b>Cycle One</b>.   
+            <br><br>
+            Now, you will enter <b>Cycle Two</b>, which will unfold in exactly the same way as <b>Cycle One</b>. 
+            <br><br>
+            You will start with the <span style="color: #e67f00;">Learning Phase</span>, in which you will first <b>learn</b> some <b>paired object pictures</b>. This is then followed by the <span style="color: #0082e6;">Testing Phase</span>, in which you will <b>be tested on</b> the <b>object pairs</b> you have learned. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            During the <span style="color: #e67f00;">Learning Phase</span>, each pair of objects will appear on the screen for <b>3 seconds</b>. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src='Stimuli/demo_B.jpg' style='max-width:45%; height:auto; display:inline-block; padding-right:10px;' />
+            <img src='Stimuli/demo_C.jpg' style='max-width:45%; height:auto; display:inline-block;' />
+        </div>`,      
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Your task is to try your best to <b>memorize</b> these pairs, because you will be tested on them later. 
+            <br><br>
+            Please <b>pay attention</b> to each pair of objects that appear on the screen, as each pair will <b>only appear once</b>. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin the <span style="color: #e67f00;">Learning Phase</span> of <b>Cycle Two</b> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(encoding_instruction_trial);
+
+    // Create and add the encoding trials to the timeline
+    var session_2_EncodingTrials = EncodingTrials(session_2);
+
+    session_2_EncodingTrials.forEach(trial => {
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+        
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Image pair trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div style='display: flex; justify-content: center;'><img src='${trial.left}' style='padding-right: 10px;' /><img src='${trial.right}' /></div>`,
+            choices: "NO_KEYS",
+            trial_duration: 3000
+        });
+    });
+
+    // console.log(session_2_EncodingTrials);
+
+    var pre_assinf_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                <p>You have completed the <span style="color: #e67f00;">Learning Phase</span> of <b>Cycle Two</b>!</p>
+                <p>You will now begin the <span style="color: #0082e6;">Testing Phase</span> of <b>Cycle Two</b>, which consists of <b>four parts</b>:</p>
+                <ul style="text-align: left; list-style-position: inside;">
+                    <li><span style="color: #91cc79;">Part 1</span> is the longest and takes about 7-10 minutes.</li>
+                    <li><span style="color: #cc79c1;">Part 2</span> and <span style="color: #7981cc;">Part 3</span> combined take about 3-5 minutes.</li>
+                    <li><span style="color: #79ccbd;">Part 4</span> takes about 5-8 minutes.</li>
+                </ul>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                In <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, you will be tested on <b>matching the objects</b> you have just learned. A cue image from any given object pair will be displayed in the center of the screen, and two options will be displayed side-by-side at the bottom. 
+                <br><br>
+                Below is an example:
+                <br>
+                <img src="Stimuli/demo_B.jpg" alt="Cue Image" style="display:inline-block; margin: 0 auto; max-width:40%; max-height:400px">
+                <br>
+                <div style="display:inline-block; justify-content: center; align-items: center;">
+                    <img src="Stimuli/demo_F.jpg" alt="Left Choice Image" style="max-width:40%; max-height:400px; margin-right: 20px;">
+                    <img src="Stimuli/demo_C.jpg" alt="Right Choice Image" style="max-width:40%; max-height:400px; margin-left: 20px;">
+                </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                Use the <b>arrow keys</b> (left arrow key: image on the left; right arrow key: image on the right) to select one of the two options that you think <b>is paired with</b> the cue image. 
+                <br><br>
+                In each trial, you have <b>10 seconds</b> to make a selection. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                After making this choice in each trial, you will see the following question: 
+                <br><br>
+                <br><br>
+                <b>"Was your chosen object directly or indirectly associated with the cue object?"</b>
+                <br><br>
+                <div style="text-align:center; margin-top: 70px;">
+                    <strong><span style="font-size: 32px; margin-right: 100px;">Direct</span></strong>
+                    <strong><span style="font-size: 32px; margin-left: 50px;">Indirect</span></strong>
+                </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                Select "Direct" if you think you <b>directly saw</b> the two images <b>as a pair</b> during the <span style="color: #e67f00;">Learning Phase</span>. Select "Indirect" if you think the cue image is <b>indirectly associated to</b> the image you just chose <b>through a shared, third image</b>. In other words, choose "Indirect" only if you think you <b>did not see</b> the cue image directly paired with the image you chose during the <span style="color: #e67f00;">Learning Phase</span>, but you know they are <b>each paired with a common third image</b>. 
+                <br><br>
+                Use the <b>arrow keys</b> (left arrow: “Direct”; right arrow: “Indirect”) to make your choice. 
+                <br><br>
+                You have <b>10 seconds</b> to make a selection. 
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                There is no practice trial in this cycle. If you are ready to begin <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, click Next. 
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_assinf_instruction_trial);
+
+    // Create and add associative inference testing trials to the timeline
+    var session_2_assinf_TestingTrials = assinf_TestingTrials(session_2);
+
+    session_2_assinf_TestingTrials.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Testing choice trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueHtml = `<div class='cue' style='text-align:center;'><img src='${trial.cue}' /></div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between;'>
+                                        <div class='choice left'><img src='${trial.choices[leftChoiceIndex]}' /></div>
+                                        <div class='choice right'><img src='${trial.choices[rightChoiceIndex]}' /></div>
+                                    </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    let trialType = trial.trialType; 
+                    data.session = '1';
+                    data.assinfTrialType = trialType;
+                    data.cuePosition = trial.cuePosition;
+                    data.cueImage = trial.cue;
+                    data.otherPosition = trial.answerPosition;
+                    data.answerImage = trial.correct;
+                    data.triadID = trial.triadNum;
+                    data.responseCorrectChoice = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+
+        // Testing source trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<p style="font-size: 30px; line-height: 3; margin-bottom: 100px;"><b>Was your chosen object directly or indirectly associated with the cue object?</b></p>`,
+            choices: ['ArrowLeft', 'ArrowRight'],
+            prompt: `
+                <div style='width: 100%; display: flex; text-align:center; justify-content: space-around;'>
+                <div style='font-size: 32px;'><b>Direct</b></div>
+                <div style='font-size: 32px;'><b>Indirect</b></div>
+                </div>`,
+            data: { isRelevant: true },
+            on_finish: function(data) {
+                let trialType = trial.trialType; 
+                data.session = '1';
+                data.assinfTrialType = trialType;
+                data.cuePosition = trial.cuePosition;
+                data.cueImage = trial.cue;
+                // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                let otherLetter = trialType.split('').find(letter => letter !== trial.cuePosition);
+                data.otherPosition = otherLetter;
+                data.answerImage = trial.correct;
+                data.triadID = trial.triadNum;
+                data.responseCorrectSource = (trialType === 'AC' && data.response === 'arrowright') || 
+                                        (trialType !== 'AC' && data.response === 'arrowleft');
+            },
+            trial_duration: 10000
+        });
+    });
+
+    // console.log(session_2_assinf_TestingTrials);
+
+    var pre_sem_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Now that you have completed <span style="color: #91cc79;">Part 1</span> of the <span style="color: #0082e6;">Testing Phase</span>, <span style="color: #cc79c1;">Part 2</span> will follow.   
+            <br><br>
+            You will see a <b>word</b> appear in the center as a cue and <b>two more words</b> at the bottom for you to choose from. All the words you will see are the <b>names</b> of the objects you have seen in pairs during the <span style="color: #e67f00;">Learning Phase</span>. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <div style="font-size: 50px;"><b>Hourglass</b></div>
+            <br><br>
+            <div style="display: flex; justify-content: space-around; align-items: center;">
+                <div style="font-size: 50px;"><b>Rooster</b></div>
+                <div style="font-size: 50px;"><b>Bow Tie</b></div>
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: word on the left; right arrow: word on the right) to select the word you think <b>is associated with</b> the cue word. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #cc79c1;">Part 2</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_sem_instruction_trial);
+
+    // Create two types of representation testing trials 
+    var session_2_sem_rep = rep_TestingTrials(session_2_repTriads).slice(0, 7);
+    var session_2_vis_rep = rep_TestingTrials(session_2_repTriads).slice(7, 14);
+
+    // Add semantic representation testing trials to the timeline
+    session_2_sem_rep.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Semantic representation trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueName = displayImageName(trial.cue);
+                var choice1Name = displayImageName(trial.choices[leftChoiceIndex]);
+                var choice2Name = displayImageName(trial.choices[rightChoiceIndex]);
+
+                var cueHtml = `<div class='cue' style='text-align:center; font-size: 70px; margin-bottom: 100px;'>${cueName}</div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-around; font-size: 70px;'>
+                                        <div class='choice left' style='margin-right: 100px;'>${choice1Name}</div>
+                                        <div class='choice right' style='margin-left: 100px;'>${choice2Name}</div>
+                                    </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    data.session = '1';
+                    data.cuePosition_sem = trial.cuePosition;
+                    data.cueImage_sem = trial.cue;
+                    // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                    let otherLetter = trial.trialType.split('').find(letter => letter !== trial.cuePosition);
+                    data.otherPosition_sem = otherLetter;
+                    data.answerImage_sem = trial.correct;
+                    data.triadID_sem = trial.triadNum;
+                    data.responseCorrectSem = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+    });
+
+    var pre_vis_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            <span style="color: #cc79c1;">Part 2</span> of the <span style="color: #0082e6;">Testing Phase</span> is over. 
+            <br><br>
+            Now, in <span style="color: #7981cc;">Part 3</span>, your task <b>will be similar to</b> <span style="color: #cc79c1;">Part 2</span> that you have just successfully completed. 
+            <br><br>
+            However, instead of words, you will be presented with some <b>new images</b> of objects you have learned that are embedded in <b>an everyday scene</b>.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            You will see an <b>image</b> appear in the center as a cue, and <b>two more images</b> at the bottom for you to choose from. 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src="Stimuli/demo_Arep.jpg" alt="Cue Image" style="display:inline-block; margin: 0 auto; max-width:40%; max-height:400px">
+            <br>
+            <div style="display:inline-block; justify-content: center; align-items: center;">
+                <img src="Stimuli/demo_Crep.jpg" alt="Left Choice Image" style="max-width:40%; max-height:400px; margin-right: 20px;">
+                <img src="Stimuli/demo_Erep.jpg" alt="Right Choice Image" style="max-width:40%; max-height:400px; margin-left: 20px;">
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: image on the left; right arrow: image on the right) to select the image you think <b>is associated with</b> the cue image. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #7981cc;">Part 3</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_vis_instruction_trial);
+
+    // Add visual representation testing trials to the timeline
+    session_2_vis_rep.forEach(trial => {
+        let leftChoiceIndex; // Declare leftChoiceIndex here
+
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Visual Representation trial
+       timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                // Randomize the left-right position of the choices
+                leftChoiceIndex = Math.random() < 0.5 ? 0 : 1; // Assign value here
+                let rightChoiceIndex = leftChoiceIndex === 0 ? 1 : 0;
+
+                var cueHtml = `<div class='cue' style='text-align:center;'><img src='${trial.cue}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>`;
+                var choicesHtml = `<div class='choices' style='display:flex; justify-content:space-between; align-items:center;'>
+                                <div class='choice left'><img src='${trial.choices[leftChoiceIndex]}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>
+                                <div class='choice right'><img src='${trial.choices[rightChoiceIndex]}' style='max-width:70%; max-height:500px; object-fit: contain;' /></div>
+                            </div>`;
+                return cueHtml + choicesHtml;
+            },
+            choices: ['ArrowLeft', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                    var correctChoicePosition = trial.choices.indexOf(trial.correct) === leftChoiceIndex ? 'ArrowLeft' : 'ArrowRight';
+                    data.session = '1';
+                    data.cuePosition_vis = trial.cuePosition;
+                    data.cueImage_vis = trial.cue;
+                    // Given trialType has two letters (e.g., 'AC') and data.cuePosition has one of those letters (e.g., 'A')
+                    let otherLetter = trial.trialType.split('').find(letter => letter !== trial.cuePosition);
+                    data.otherPosition_vis = otherLetter;
+                    data.answerImage_vis = trial.correct;
+                    data.triadID_vis = trial.triadNum;
+                    data.responseCorrectVis = jsPsych.pluginAPI.compareKeys(data.response, correctChoicePosition);
+            },
+            trial_duration: 10000 // 10 seconds to respond
+        });
+    });
+
+    // console.log(session_2_sem_rep);
+    // console.log(session_2_vis_rep);
+
+    var pre_rec_instruction_trial = {
+        type: jsPsychInstructions,
+        pages: [
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            You are almost done with <b>Cycle Two</b>!  
+            <br><br>
+            In <span style="color: #79ccbd;">Part 4</span> of the <span style="color: #0082e6;">Testing Phase</span>, you will see the <b>images</b> of the objects appear on the screen <b>one by one</b>. 
+            <br><br>
+            Each image will <b>only appear once</b>, and you should determine whether the image is "Old," "Similar," or "New." 
+            <br><br>
+            Below is an example:
+            <br><br>
+            <img src="Stimuli/demo_B.jpg" style="display:inline-block; margin: 0 auto; max-width:25%; max-height:250px">
+            <div style="text-align:center; margin-top: 50px;">
+                <strong><span style="font-size: 32px; margin-right: 50px;">Old</span></strong>
+                <strong><span style="font-size: 32px; margin-right: 50px;">Similar</span></strong>
+                <strong><span style="font-size: 32px;">New</span></strong>
+            </div>
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Select "Old" if you think the image on the screen <b>has appeared</b> in any of the given <b>object pairs</b> in the <span style="color: #e67f00;">Learning Phase</span>. 
+            <br><br>
+            Select "Similar" if you think the image <b>is similar to</b> an image that <b>has appeared</b> in the <span style="color: #e67f00;">Learning Phase</span>, <b>BUT</b> with a <b>different</b> number/ color/ angle/ type. 
+            <br><br>
+            Select "New" if you think you <b>have never seen</b> the image in the <span style="color: #e67f00;">Learning Phase</span>.    
+        </div>`,
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Use the <b>arrow keys</b> (left arrow: “Old”; down arrow: “Similar”; right arrow: “New”) to make your choice. 
+            <br><br>
+            You have <b>10 seconds</b> to make a selection.
+        </div>`,  
+        `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+            Click next to begin <span style="color: #79ccbd;">Part 4</span> of the <span style="color: #0082e6;">Testing Phase</span> when you are ready.
+        </div>`
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(pre_rec_instruction_trial);
+
+    // Prepare the images for the recognition memory test
+    let [session_2_old, session_2_placeholder_lure] = prepareRecImages(session_2);
+    let session_2_lure = session_2_placeholder_lure.map(item => ({ image: mapping_lure[item.image], position: item.position, triadNum: item.triadNum }));
+
+    // Combine all images into one array with their corresponding correct responses
+    let combinedRecImages_session_2 = [].concat(
+        session_2_old.map(item => ({ image: item.image, position: item.position, triadNum: item.triadNum, correctResponse: 'ArrowLeft', trialType: 'Old' })), // 'Old' is correct
+        session_2_lure.map(item => ({ image: item.image, position: item.position, triadNum: item.triadNum, correctResponse: 'ArrowDown', trialType: 'Lure' })), // 'Similar' is correct
+        session_2_new.map(image => ({ image: image, position: 'New', triadNum: 'New', correctResponse: 'ArrowRight', trialType: 'New' })) // 'New' is correct
+    );
+
+    // Randomize the order of combined images
+    shuffle(combinedRecImages_session_2);
+
+    // Add recognition trials to the timeline
+    combinedRecImages_session_2.forEach(trial => {
+        // Press space to continue
+        timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `<p style="font-size: 30px;"><b> Press Space to Continue When You Are Ready</b></p>`,
+                choices: " "    
+        });
+
+        // Fixation cross trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h1 style="font-size: 100px; text-align: center;"><b>+</b></h1>',
+            choices: "NO_KEYS",
+            trial_duration: 500
+        });
+
+        // Recognition Memory trial
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<img src="' + trial.image + '" style="display:block; margin:auto; max-width:80%; max-height:80vh; object-fit: contain;">' +
+                    '<div style="text-align:center; margin-top: 50px;">' +
+                    '<strong><span style="font-size: 32px; margin-right: 50px;">Old</span></strong>' +
+                    '<strong><span style="font-size: 32px; margin-right: 50px;">Similar</span></strong>' +
+                    '<strong><span style="font-size: 32px;">New</span></strong>',
+            choices: ['ArrowLeft', 'ArrowDown', 'ArrowRight'],
+            data: { isRelevant: true }, // Marking this trial's data as relevant
+            on_finish: function(data) {
+                var correctChoice = trial.correctResponse;
+                data.session = '1';
+                data.recTrialType = trial.trialType;
+                data.recTrialPosition = trial.position;
+                data.recImage = trial.image;
+                data.recTriadID = trial.triadNum;
+                data.responseCorrectRec = jsPsych.pluginAPI.compareKeys(data.response, correctChoice);
+            },
+            trial_duration: 10000
+        });
+    });
+
+    // console.log(combinedRecImages_session_2);
+
+    var instruction_trial_10 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<div style="font-size: 30px; line-height: 1.5; text-align: center;">
+                    Great! You have completed all four parts of the <span style="color: #0082e6;">Testing Phase</span> for <b>Cycle Two</b>..   
+                    <br><br>
+                    To finish this experiment, you will need to fill out <b>a quick questionnaire</b> and answer some <b>somedemographics-related questions</b>.
+                    <br><br>
+                    Press the space bar to continue.
+                    </div>`,
+        choices: [' '],
+    };
+    timeline.push(instruction_trial_10);
+
+    var orientation_survey = {
+        type: jsPsychSurveyLikert,
+        preamble: `<style>
+                .jspsych-survey-likert-statement {
+                    font-size: 27px; /* Adjusts question text */
+                }
+                .jspsych-survey-likert-opts:before {
+                    content: none !important; /* Removes any before pseudo-elements that may be adding a line */
+                }
+                .jspsych-survey-likert-opts {
+                    font-size: 20px; /* Adjusts Likert scale labels */
+                    display: flex; /* Uses flex display for better control */
+                    justify-content: flex-start; /* Aligns items to the start (left) */
+                    width: 80%; /* Ensures the options container uses the full width */
+                }
+                .jspsych-survey-likert-opt-label {
+                    flex-grow: 0; /* Prevents labels from growing and uses their content width */
+                    text-align: left; /* Aligns the text within each option to the left */
+                    margin-right: 20px; /* Adds space between options */
+                }
+                /* Removes the last option's margin to avoid unnecessary spacing at the end */
+                .jspsych-survey-likert-opt-label:last-child { 
+                    margin-right: 0;
+                }
+                </style>
+                <div style="font-size: 30px; line-height: 1.5;">
+                <p>The following questions relate to your <b>memory for past events</b> from a specific time and place for which you <b>were personally involved</b>. Please indicate the degree to which you <b>agree with</b> each statement. Use the scale from 1 (Strongly Disagree) to 7 (Strongly Agree) to provide your response.</p>
+                <p><b>Events</b> are defined as occurring within a day or less. For example, a three-week vacation <b>is NOT considered</b> a specific event, but something that happened <b>on one day</b> during your vacation <b>is considered</b> a specific event. The questions apply to events that happened <b>at least 3-4 weeks ago</b> (as opposed to something that happened just a few days ago).</p>
+                <p>When answering, don't think about <b>just one event</b>; rather, think about your <b>general ability</b> to remember specific past events.</p>
+               </div>`,
+        questions: [
+            {
+                prompt: "Specific events are difficult for me to recall.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "When I remember events, in general I can recall objects that were in the environment.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "I recall vivid details such as colors, sounds, and textures when remembering past experiences.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "When recalling an event, I remember the overall experience more than specific details.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "I often find myself focusing on the context and meaning behind events, not just the events themselves.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "My memories of events are more like summaries of what happened rather than a replay of the events.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "I can easily visualize the setting of an event in my mind.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "The mental images I form are as vivid as real-life visuals.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            },
+            {
+                prompt: "When imagining a scene, I can easily change and manipulate the elements of the scene in my mind.",
+                labels: ["1 (Strongly Disagree)", "2", "3", "4", "5", "6", "7 (Strongly Agree)"],
+                required: true
+            }
+        ],
+        scale_width: 100,
+        button_label: "Submit",
+        data: { isRelevant: true },
+        on_finish: function(data) {
+            // Adjust each response to start from 1 instead of 0
+            Object.keys(data.response).forEach(function(key) {
+                data.response[key] = parseInt(data.response[key]) + 1;
+            });
+        }
+    };
+    timeline.push(orientation_survey);
+
+    var demographics_trial = {
+        type: jsPsychSurveyHtmlForm,
+        preamble: '<p style="font-size: 25px;">Please fill out the following demographics information.</p>',
+        html: `<p>
+                <label for="age">Age:</label>
+                <select name="age" id="age" required>
+                    <option value="">Select your age</option>
+                    <option value="below 18">Below 18</option>
+                    ${Array.from({length: 8}, (_, i) => `<option value="${i + 18}">${i + 18}</option>`).join('')}
+                    <option value="above 25">Above 25</option>
+                </select>
+            </p>
+            <p>
+                <label for="sex">Sex:</label>
+                <select name="sex" id="sex" required>
+                    <option value="">Select your sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+            </p>
+            <p>
+                <label for="race">Race:</label>
+                <select name="race" id="race" required>
+                    <option value="">Select your race</option>
+                    <option value="american_indian">American Indian or Alaska Native</option>
+                    <option value="asian">Asian</option>
+                    <option value="black">Black or African American</option>
+                    <option value="hispanic">Hispanic or Latino</option>
+                    <option value="pacific_islander">Native Hawaiian or Other Pacific Islander</option>
+                    <option value="white">White or Caucasian</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+            </p>
+        `,
+        button_label: "Submit",
+        data: { isRelevant: true }
+    };
+    timeline.push(demographics_trial);
+
+    var debrief = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: ` <p style="font-size: 19px;"><b>WHAT IS THE PURPOSE OF THIS STUDY?</b></p>
+                    <div style="font-size: 20px; line-height: 1.5;text-align: left;">
+                    Memory generalization is a cognitive process in which the brain applies information learned from a particular experience to a new, similar situation. This is crucial for adaptive behavior, as it allows individuals to recognize patterns and make informed decisions without having to relearn similar lessons. The current study examines memory generalization and aims to answer three questions surrounding it. The first question is whether there is a trade-off between remembering the specific details of a stimulus and generalizing the associations between learned stimuli to new situations. The second question explores the mnemonic structures that support generalization, asking how different types of memory representations (semantic vs. visual) facilitate generalization. And the third question concerns the underlying mechanisms of generalization, i.e., whether the encoding-based model or the retrieval-based model more accurately reflects the stage at which memory generalization occurs. Research in memory generalization is crucial as it informs approaches to enhancing learning and decision-making, and is pivotal for advancing our understanding of concept formation and problem-solving abilities across disciplines such as psychology, neuroscience, and education.
+                    </div>
+                    <p style="font-size: 19px;"><b>WHERE CAN I LEARN MORE?</b></p>
+                    <div style="font-size: 20px; line-height: 1.2; text-align: left;">
+                    Banino, A., Koster, R., Hassabis, D. et al. Retrieval-Based Model Accounts for Striking Profile of Episodic Memory and Generalization. Sci Rep 6, 31330 (2016). <a href="https://doi.org/10.1038/srep31330" target="_blank">https://doi.org/10.1038/srep31330</a> 
+                    <br><br>
+                    Davis, S. W., Geib, B. R., Wing, E. A., Wang, W. C., Hovhannisyan, M., Monge, Z. A., & Cabeza, R. (2021). Visual and Semantic Representations Predict Subsequent Memory in Perceptual and Conceptual Memory Tests. Cerebral cortex (New York, N.Y. : 1991), 31(2), 974–992. <a href="https://doi.org/10.1093/cercor/bhaa269" target="_blank">https://doi.org/10.1093/cercor/bhaa269</a>  
+                    <br><br>
+                    Melega, G., Sheldon, S. Conceptual relatedness promotes memory generalization at the cost of detailed recollection. Sci Rep 13, 15575 (2023). <a href="https://doi.org/10.1038/s41598-023-40803-4" target="_blank">https://doi.org/10.1038/s41598-023-40803-4</a>  
+                    </div>
+                    <p style="font-size: 19px;"><b>WHAT IF I HAVE QUESTIONS LATER?</b></p>
+                    <div style="font-size: 20px; line-height: 1.3;text-align: left;">
+                    If you have any questions, reactions, or concerns regarding this research study that you would like to share with us, whether they are about the content of the experiment or how the testing was administered, please contact us: Evie Chen (eviechen@wustl.edu) or Zachariah M. Reagh (zreagh@wustl.edu).
+                    </div>
+                    <p style="color: red;font-size: 30px;"><b>Press the space bar to be redirected to your SONA portal and earn your research credit. Thank you so much for your participation!</b></p>`,
+        choices: [' '],
+    };
+    timeline.push(debrief);
+
+    jsPsych.run(timeline);
+
+  </script>  
+</html>
+

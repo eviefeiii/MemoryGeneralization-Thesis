@@ -1,0 +1,1422 @@
+---
+title: "Thesis Data Analysis/ Visualization"
+author: "Yifei Chen"
+date: "2024-02-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( 
+  echo = TRUE, 
+  message = FALSE,
+  warning = FALSE
+  )
+```
+
+```{r}
+# Load necessary library
+library(ggplot2)
+library(tidyverse)
+library (broom)
+library(psych)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(stringr)
+library(ez)
+library(multcomp)
+library(jsonlite)
+library(gridExtra)
+library(rstatix)
+library(ggeffects)
+library(patchwork)
+library(lme4)
+library(lavaan)
+library(vioplot)
+library(viridis)
+library(emmeans)
+```
+
+# Data Analysis and Visualization
+
+## Preparation
+
+```{r}
+# Read the CSV file
+GenRepRec_clean <- read.csv('GenRepRec_clean_TwoSessionsVer.csv')
+
+# List all CSV files in the directory
+csv_files <- list.files(path = "Raw Data", pattern = "\\.csv$", full.names = TRUE)
+
+# Flipping the score scale as Q1 is a reversed wording question
+GenRepRec_clean['Q1'] = 8 - GenRepRec_clean['Q1']
+
+# Record the sona_id of rows to be removed
+rows_to_remove <- which(!complete.cases(GenRepRec_clean))
+sona_ids_removed <- GenRepRec_clean$Participant.ID[rows_to_remove]
+
+# Record the number of rows to be removed
+number_of_rows_removed <- length(rows_to_remove)
+
+# Remove the rows from the dataframe
+GenRepRec_clean <- GenRepRec_clean[-rows_to_remove, ]
+
+# Print out the sona_ids and the number of rows removed
+print(paste("sona_id of removed participants:", paste(sona_ids_removed, collapse = ", ")))
+print(paste("Number of rows removed:", number_of_rows_removed))
+```
+
+## Data removal
+
+Remove rows from the dataset where the combined accuracy of "DirectCorrect_AC_Choice_Acc_0" and "DirectCorrect_AC_Choice_Acc_0" is less than 60%
+
+```{r}
+# Calculate combined accuracy for "DirectCorrect_AC_Choice_Acc_0" and "DirectCorrect_AC_Choice_Acc_0"
+GenRepRec_clean$direct_combined_AC_choice <- (GenRepRec_clean$DirectCorrect_AC_Choice_Acc_0 + GenRepRec_clean$DirectCorrect_AC_Choice_Acc_1) / 2
+
+# Perform a one-sample t-test comparing the mean accuracy to chance level (50%)
+t_test_result <- t.test(GenRepRec_clean$direct_combined_AC_choice, mu = 50)
+
+# Print the results of the t-test
+print(t_test_result)
+
+# Find the rows to remove where combined accuracy is less than 60%
+rows_to_remove <- which(GenRepRec_clean$direct_combined_AC_choice < 60)
+
+# Record the sona_id of rows to be removed
+sona_ids_removed <- GenRepRec_clean$Participant.ID[rows_to_remove]
+
+# Record the number of rows to be removed
+number_of_rows_removed <- length(rows_to_remove)
+
+# Remove the rows from the dataframe
+GenRepRec_clean <- GenRepRec_clean[-rows_to_remove, ]
+
+# Print out the sona_ids and the number of rows removed
+print(paste("sona_id of removed participants:", paste(sona_ids_removed, collapse = ", ")))
+print(paste("Number of rows removed:", number_of_rows_removed))
+
+```
+
+## Plotting mean accuracy by trial type
+
+### associative inference choice trials
+
+```{r}
+# Function to calculate means and SEMs, returns a data frame
+prepare_data <- function(data, columns, name_changes, session_name) {
+  means <- sapply(data[columns], mean, na.rm = TRUE)
+  ses <- sapply(data[columns], function(x) sd(x, na.rm = TRUE) / sqrt(length(na.omit(x))))
+  
+  # Convert to data frame
+  df <- data.frame(
+    Condition = names(means),
+    Accuracy = means,
+    SE = ses
+  )
+  
+  # Rename conditions to be more descriptive
+  df$Condition <- name_changes[df$Condition]
+  
+  # Mark the session
+  df$Session <- session_name
+  
+  # Ensure the order of conditions is maintained
+  df$Condition <- factor(df$Condition, levels = unique(df$Condition))
+  
+  return(df)
+}
+
+# Prepare data for both sessions
+name_changes <- c(assinf_choice_AB_0 = "AB", assinf_choice_BC_0 = "BC", assinf_choice_AC_0 = "AC", DirectCorrect_AC_Choice_Acc_0 = "AC after removal",
+                  assinf_choice_AB_1 = "AB", assinf_choice_BC_1 = "BC", assinf_choice_AC_1 = "AC", DirectCorrect_AC_Choice_Acc_1 = "AC after removal")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('assinf_choice_AB_0', 'assinf_choice_BC_0', 'assinf_choice_AC_0', 'DirectCorrect_AC_Choice_Acc_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('assinf_choice_AB_1', 'assinf_choice_BC_1', 'assinf_choice_AC_1', 'DirectCorrect_AC_Choice_Acc_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Accuracy of Associative Inference Choice Trials by Trial Type", x = "Trial Type", y = "Mean Accuracy (%)",
+       caption = "Error bars represent the standard error of the mean") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+
+# Conduct t-test for AC and dirrectcorrect AC 
+t.test(GenRepRec_clean$assinf_choice_AC_0, GenRepRec_clean$DirectCorrect_AC_Choice_Acc_0, paired = TRUE, alternative = "two.sided")
+t.test(GenRepRec_clean$assinf_choice_AC_1, GenRepRec_clean$DirectCorrect_AC_Choice_Acc_1, paired = TRUE, alternative = "two.sided")
+```
+
+```{r}
+# Vector of column names for easier access
+columns <- c('assinf_choice_AB_0', 'assinf_choice_AB_1', 
+                                 'assinf_choice_BC_0', 'assinf_choice_BC_1', 
+                                 'assinf_choice_AC_0', 'assinf_choice_AC_1', 
+                                 'DirectCorrect_AC_Choice_Acc_0', 'DirectCorrect_AC_Choice_Acc_1')
+
+# Reshape the data from wide to long format
+long_data <- reshape(GenRepRec_clean[columns],
+                     varying = c('assinf_choice_AB_0', 'assinf_choice_AB_1', 
+                                 'assinf_choice_BC_0', 'assinf_choice_BC_1', 
+                                 'assinf_choice_AC_0', 'assinf_choice_AC_1', 
+                                 'DirectCorrect_AC_Choice_Acc_0', 'DirectCorrect_AC_Choice_Acc_1'),
+                     v.names = "Accuracy",
+                     timevar = "Condition_Session",
+                     idvar = "Participant.ID",
+                     times = c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1", "DirectCorrect_AC_0", "DirectCorrect_AC_1"),
+                     direction = "long")
+
+# The 'Condition_Session' column will have values like 'AB_0', 'AB_1', etc.
+# We split it into 'Condition' and 'Session' by using the sub and gsub functions
+
+# Extract the session number and convert it to a factor
+long_data$Session <- as.factor(sub(".*_([0-1])$", "\\1", long_data$Condition_Session))
+
+# Extract the condition name
+long_data$Condition <- gsub("(_[0-1])$", "", long_data$Condition_Session)
+long_data$Condition <- gsub("assinf_choice_", "", long_data$Condition) # Removes the prefix if present
+long_data$Condition <- gsub("DirectCorrect AC", "DirectCorrect AC", long_data$Condition)
+
+# Now the Condition and Session are correctly separated, and we can proceed to fit a linear model
+model <- lm(Accuracy ~ Condition * Session, data = long_data)
+
+# Summarize the model
+summary(model)
+
+# Calculate the means and standard errors for each condition and session combination
+interaction_data <- long_data %>%
+  group_by(Condition, Session) %>%
+  summarise(Mean = mean(Accuracy, na.rm = TRUE),
+            SEM = sd(Accuracy, na.rm = TRUE) / sqrt(n())) %>%
+  ungroup()
+
+# Plotting the interaction between Condition and Session
+ggplot(interaction_data, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Interaction of Condition and Session", x = "Condition", y = "Mean Accuracy (%)", color = "Session") +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+# Conduct t-test for AC and dirrectcorrect AC across two sessions
+t.test(GenRepRec_clean$assinf_choice_AC_0, GenRepRec_clean$assinf_choice_AC_1, paired = TRUE, alternative = "two.sided")
+t.test(GenRepRec_clean$DirectCorrect_AC_Choice_Acc_0, GenRepRec_clean$DirectCorrect_AC_Choice_Acc_1, paired = TRUE, alternative = "two.sided")
+```
+
+### associative inference source trials
+
+```{r}
+# Prepare data for both sessions
+name_changes <- c(assinf_source_AB_0 = "AB", assinf_source_BC_0 = "BC", assinf_source_AC_0 = "AC", DirectCorrect_AC_Source_Acc_0 = "AC after removal",
+                  assinf_source_AB_1 = "AB", assinf_source_BC_1 = "BC", assinf_source_AC_1 = "AC", DirectCorrect_AC_Source_Acc_1 = "AC after removal")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('assinf_source_AB_0', 'assinf_source_BC_0', 'assinf_source_AC_0', 'DirectCorrect_AC_Source_Acc_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('assinf_source_AB_1', 'assinf_source_BC_1', 'assinf_source_AC_1', 'DirectCorrect_AC_Source_Acc_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Accuracy of Associative Inference Source Trials by Trial Type", x = "Trial Type", y = "Mean Accuracy (%)",
+       caption = "Error bars represent the standard error of the mean") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+
+# Conduct t-test for AC and dirrectcorrect AC 
+t.test(GenRepRec_clean$assinf_source_AC_0, GenRepRec_clean$DirectCorrect_AC_Source_Acc_0, paired = TRUE, alternative = "two.sided")
+t.test(GenRepRec_clean$assinf_source_AC_1, GenRepRec_clean$DirectCorrect_AC_Source_Acc_1, paired = TRUE, alternative = "two.sided")
+```
+
+```{r}
+# Vector of column names for easier access
+columns <- c('assinf_source_AB_0', 'assinf_source_AB_1', 
+                                 'assinf_source_BC_0', 'assinf_source_BC_1', 
+                                 'assinf_source_AC_0', 'assinf_source_AC_1', 'DirectCorrect_AC_Source_Acc_0', 'DirectCorrect_AC_Source_Acc_1')
+
+# Reshape the data from wide to long format
+long_data <- reshape(GenRepRec_clean[columns],
+                     varying = c('assinf_source_AB_0', 'assinf_source_AB_1', 
+                                 'assinf_source_BC_0', 'assinf_source_BC_1', 
+                                 'assinf_source_AC_0', 'assinf_source_AC_1', 'DirectCorrect_AC_Source_Acc_0', 'DirectCorrect_AC_Source_Acc_1'),
+                     v.names = "Accuracy",
+                     timevar = "Condition_Session",
+                     idvar = "Participant.ID",
+                     times = c("AB_0", "AB_1", "BC_0", "BC_1", "AC_0", "AC_1", "DirectCorrect_AC_0", "DirectCorrect_AC_1"),
+                     direction = "long")
+
+# The 'Condition_Session' column will have values like 'AB_0', 'AB_1', etc.
+# We split it into 'Condition' and 'Session' by using the sub and gsub functions
+
+# Extract the session number and convert it to a factor
+long_data$Session <- as.factor(sub(".*_([0-1])$", "\\1", long_data$Condition_Session))
+
+# Extract the condition name
+long_data$Condition <- gsub("(_[0-1])$", "", long_data$Condition_Session)
+long_data$Condition <- gsub("assinf_source_", "", long_data$Condition) # Removes the prefix if present
+long_data$Condition <- gsub("DirectCorrect AC", "DirectCorrect AC", long_data$Condition)
+
+# Now the Condition and Session are correctly separated, and we can proceed to fit a linear model
+model <- lm(Accuracy ~ Condition * Session, data = long_data)
+
+# Summarize the model
+summary(model)
+```
+
+## Plotting mean reaction time by trial type
+
+### associative inference choice trials
+
+```{r}
+# Prepare data for both sessions
+name_changes <- c(rt_assinf_choice_AB_0 = "AB", rt_assinf_choice_BC_0 = "BC", rt_assinf_choice_AC_0 = "AC",
+                  rt_assinf_choice_AB_1 = "AB", rt_assinf_choice_BC_1 = "BC", rt_assinf_choice_AC_1 = "AC")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('rt_assinf_choice_AB_0', 'rt_assinf_choice_BC_0', 'rt_assinf_choice_AC_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('rt_assinf_choice_AB_1', 'rt_assinf_choice_BC_1', 'rt_assinf_choice_AC_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Reaction Time of Associative Inference Choice Trials by Trial Type", x = "Trial Type", y = "Mean Reaction Time [ms]") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+```
+
+### associative inference source trials
+
+```{r}
+# Prepare data for both sessions
+name_changes <- c(rt_assinf_source_AB_0 = "AB", rt_assinf_source_BC_0 = "BC", rt_assinf_source_AC_0 = "AC",
+                  rt_assinf_source_AB_1 = "AB", rt_assinf_source_BC_1 = "BC", rt_assinf_source_AC_1 = "AC")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('rt_assinf_source_AB_0', 'rt_assinf_source_BC_0', 'rt_assinf_source_AC_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('rt_assinf_source_AB_1', 'rt_assinf_source_BC_1', 'rt_assinf_source_AC_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Reaction Time of Associative Inference Source Trials by Trial Type", x = "Trial Type", y = "Mean Reaction Time [ms]") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+```
+
+## Plotting associative inference choice/source accuracy and reaction time by cue image's position across different trial types
+
+```{r}
+calculate_means_sems <- function(data, conditions, type_prefix, string) {
+  # Initialize an empty data frame to store the results
+  mean_sem_data_by_condition_session <- data.frame(
+    Condition = character(),
+    Session = factor(),
+    Mean = numeric(),
+    SEM = numeric()
+  )
+  
+  # Loop over conditions and sessions to calculate means and SEMs
+  for (cond in conditions) {
+    for (session_num in 0:1) {
+      # Construct column names based on condition and session
+      col_name <- paste(cond, type_prefix, session_num, sep = "_")
+      
+      # Calculate mean and SEM
+      mean_val <- mean(data[[col_name]], na.rm = TRUE)
+      sem_val <- sd(data[[col_name]], na.rm = TRUE) / sqrt(sum(!is.na(data[[col_name]])))
+      
+      # Create a readable condition name
+      #readable_cond <- gsub("_(.)", " with cue \\1", cond)
+      readable_cond <- gsub(string, "", cond) # Optional: Remove 'choice_' prefix for readability
+      
+      # Append to the data frame
+      mean_sem_data_by_condition_session <- rbind(mean_sem_data_by_condition_session, data.frame(
+        Condition = readable_cond,
+        Session = factor(paste("Session", session_num + 1)),
+        Mean = mean_val,
+        SEM = sem_val
+      ))
+    }
+  }
+  
+  # Adjust the Condition column to be a factor with levels in the specific order they appear in the dataframe
+  mean_sem_data_by_condition_session$Condition <- factor(mean_sem_data_by_condition_session$Condition, levels = unique(mean_sem_data_by_condition_session$Condition))
+  
+  return(mean_sem_data_by_condition_session)
+}
+
+# Define a vector of condition names for easier access
+choice_conditions <- c("choice_AB_A", "choice_AB_B", "choice_BC_B", "choice_BC_C", "choice_AC_A", "choice_AC_C")
+
+source_conditions <- c("source_AB_A", "source_AB_B", "source_BC_B", "source_BC_C", "source_AC_A", "source_AC_C")
+
+# Store the values into dataframes 
+choice_acc_bycue <- calculate_means_sems(GenRepRec_clean, choice_conditions, "accuracy", "choice_")
+choice_rt_bycue <- calculate_means_sems(GenRepRec_clean, choice_conditions, "rt", "choice_")
+source_acc_bycue <- calculate_means_sems(GenRepRec_clean, source_conditions, "accuracy", "source_")
+source_rt_bycue <- calculate_means_sems(GenRepRec_clean, source_conditions, "rt", "source_")
+```
+
+```{r}
+# Plotting
+p1 <- ggplot(choice_acc_bycue, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Choice Test Accuracy", x = "Condition", y = "Mean Accuracy (%)", color = "Session") +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+p2 <- ggplot(choice_rt_bycue, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Choice Test Reaction Time", x = "Condition", y = "Mean Reaction Time (ms)", color = "Session") +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+p3 <- ggplot(source_acc_bycue, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Source Test Accuracy", x = "Condition", y = "Mean Accuracy (%)", color = "Session") +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+p4 <- ggplot(source_rt_bycue, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Source Test Reaction Time", x = "Condition", y = "Mean Reaction Time (ms)", color = "Session") +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+# Combine the four plots into one panel
+panel_plot <- p1 + p2 + p3 + p4 + 
+  plot_layout(ncol = 2, nrow = 2)
+
+ggsave("combined_panel_plot.png", panel_plot, width = 20, height = 20, dpi = 300)
+```
+
+### Linear regression model fitting choice and source accuracy's data
+
+```{r}
+calculate_interaction <- function(data, columns, string1, string2, string3) {
+  # Reshape the data from wide to long format
+  long_data <- reshape(data[columns],
+                       varying = columns,
+                       v.names = "Accuracy",
+                       timevar = "Condition_Session",
+                       idvar = "Participant.ID",
+                       times = columns,
+                       direction = "long")
+  
+  # Split the Condition_Session into separate factors
+  long_data$Condition <- gsub(string1, "", long_data$Condition_Session)
+  long_data$Condition <- gsub(string3, "", long_data$Condition) # Optional: Remove 'choice_' prefix for readability
+  long_data$Session <- as.numeric(sub(string2, "\\1", long_data$Condition_Session))
+  long_data$Session <- as.factor(paste("Session", long_data$Session + 1))
+  
+  # Calculate the means and standard errors for each condition and session combination
+  interaction_data <- long_data %>%
+    group_by(Condition, Session) %>%
+    summarise(Mean = mean(Accuracy, na.rm = TRUE),
+              SEM = sd(Accuracy, na.rm = TRUE) / sqrt(n()), 
+              .groups = 'drop')
+  
+  # Run a linear regression model
+  model <- lm(Accuracy ~ Condition * Session, data = long_data)
+  
+  # To summarize the model
+  summary(model)
+}
+
+# Plotting
+choice_acc <- c("choice_AB_A_accuracy_0", "choice_AB_A_accuracy_1", "choice_AB_B_accuracy_0", "choice_AB_B_accuracy_1", 
+             "choice_BC_B_accuracy_0", "choice_BC_B_accuracy_1", "choice_BC_C_accuracy_0", "choice_BC_C_accuracy_1",
+             "choice_AC_A_accuracy_0", "choice_AC_A_accuracy_1", "choice_AC_C_accuracy_0", "choice_AC_C_accuracy_1")
+
+source_acc <- c("source_AB_A_accuracy_0", "source_AB_A_accuracy_1", "source_AB_B_accuracy_0", "source_AB_B_accuracy_1", 
+             "source_BC_B_accuracy_0", "source_BC_B_accuracy_1", "source_BC_C_accuracy_0", "source_BC_C_accuracy_1",
+             "source_AC_A_accuracy_0", "source_AC_A_accuracy_1", "source_AC_C_accuracy_0", "source_AC_C_accuracy_1")
+
+#choice_rt <- c("choice_AB_A_rt_0", "choice_AB_A_rt_1", "choice_AB_B_rt_0", "choice_AB_B_rt_1", "choice_BC_B_rt_0", "choice_BC_B_rt_1", "choice_BC_C_rt_0", "choice_BC_C_rt_1","choice_AC_A_rt_0", "choice_AC_A_rt_1", "choice_AC_C_rt_0", "choice_AC_C_rt_1")
+
+
+calculate_interaction(GenRepRec_clean, choice_acc, "(_accuracy_[0-1])", ".*_accuracy_([0-1])$", "choice_")
+#calculate_interaction(GenRepRec_clean, source_acc, "(_accuracy_[0-1])", ".*_accuracy_([0-1])$", "source_")
+```
+
+## Plotting recognition memory test
+
+```{r}
+# Prepare data for both sessions
+name_changes <- c(rec_Old_0 = "Old", rec_Lure_0 = "Similar", rec_New_0 = "New", rec_Overall_0 = "Overall",
+                  rec_Old_1 = "Old", rec_Lure_1 = "Similar", rec_New_1 = "New", rec_Overall_1 = "Overall")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('rec_Old_0', 'rec_Lure_0', 'rec_New_0', 'rec_Overall_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('rec_Old_1', 'rec_Lure_1', 'rec_New_1', 'rec_Overall_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Accuracy of Recognition Memory Test by Trial Type", x = "Trial Type", y = "Mean Accuracy (%)") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+```
+
+```{r}
+# Vector of column names for easier access
+columns <- c('rec_Old_0', 'rec_Lure_0', 'rec_New_0', 'rec_Overall_0','rec_Old_1', 'rec_Lure_1', 'rec_New_1', 'rec_Overall_1')
+
+# Reshape the data from wide to long format
+long_data <- reshape(GenRepRec_clean[columns],
+                     varying = c('rec_Old_0', 'rec_Lure_0', 'rec_New_0', 'rec_Overall_0','rec_Old_1', 'rec_Lure_1', 'rec_New_1', 'rec_Overall_1'),
+                     v.names = "Accuracy",
+                     timevar = "Condition_Session",
+                     idvar = "Participant.ID",
+                     times = columns,
+                     direction = "long")
+
+# Split the Condition_Session into separate factors
+long_data$Condition <- gsub("(_accuracy_[0-1])", "", long_data$Condition_Session)
+long_data$Session <- as.factor(sub(".*_accuracy_([0-1])$", "\\1", long_data$Condition_Session))
+
+
+# Extract the session number and convert it to a factor
+long_data$Session <- as.factor(sub(".*_([0-1])$", "\\1", long_data$Condition_Session))
+
+# Extract the condition name
+long_data$Condition <- gsub("(_[0-1])$", "", long_data$Condition_Session)
+long_data$Condition <- gsub("rec_", "", long_data$Condition) # Removes the prefix if present
+
+
+# Run a linear regression model
+model <- lm(Accuracy ~ Condition * Session, data = long_data)
+
+# To summarize the model
+summary(model)
+```
+
+```{r}
+# Calculate the means and standard errors for each condition and session combination
+interaction_data <- long_data %>%
+  group_by(Condition, Session) %>%
+  summarise(Mean = mean(Accuracy, na.rm = TRUE),
+            SEM = sd(Accuracy, na.rm = TRUE) / sqrt(n())) %>%
+  ungroup()
+
+# Plotting the interaction between Condition and Session
+ggplot(interaction_data, aes(x = Condition, y = Mean, group = Session, color = Session)) +
+  geom_line(aes(linetype = Session), size = 1) + # Use linetype to differentiate sessions
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Interaction of Condition and Session", x = "Condition", y = "Mean Accuracy (%)", color = "Session") +
+  theme(text = element_text(size = 12))
+```
+
+## Recognition performance grouped by generalization performance
+
+```{r}
+# Calculate the median for the 'direct_combined_AC_choice' column
+median_direct_combined_AC_choice <- median(GenRepRec_clean$direct_combined_AC_choice, na.rm = TRUE)
+
+# Classify participants into two groups based on their performance
+GenRepRec_clean <- GenRepRec_clean %>%
+  mutate(
+    TwoGroups_direct_combined_AC = ifelse(direct_combined_AC_choice <= median_direct_combined_AC_choice, "Lower Half", "Upper Half")  )
+
+# Reshape the data to long format for plotting
+long_data <- GenRepRec_clean %>%
+  select(rec_Overall_0, rec_Overall_1, TwoGroups_direct_combined_AC) %>%
+  pivot_longer(cols = starts_with("rec_Overall_"),
+               names_to = "Session",
+               values_to = "rec_Overall") %>%
+  mutate(
+    Session = factor(gsub("rec_Overall_", "", Session)),
+    Group = TwoGroups_direct_combined_AC
+  )
+
+# First, calculate the mean rec_Overall for each Session and Group combination
+group_means <- long_data %>%
+  group_by(Session, Group) %>%
+  summarize(mean_rec_Overall = mean(rec_Overall, na.rm = TRUE)) %>%
+  ungroup()
+
+# Now create the combined graph with violin plot and line graph
+ggplot(long_data, aes(x = Session, y = rec_Overall, color = Group)) +
+  geom_violin(aes(fill = Group), trim = FALSE, alpha = 0.5) +  # Adjust alpha for transparency
+  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +  # Add points to show individual observations
+  geom_line(data = group_means, aes(x = Session, y = mean_rec_Overall, group = Group, color = Group), size = 1) +
+  geom_point(data = group_means, aes(x = Session, y = mean_rec_Overall, group = Group, color = Group), size = 3) +
+  scale_color_manual(values = c("Lower Half" = "darkorange", "Upper Half" = "dodgerblue")) +
+  scale_fill_manual(values = c("Lower Half" = "darkorange", "Upper Half" = "dodgerblue")) +  # Use similar colors for fill
+  labs(title = "Session-wise Comparison of Recognition Performance by Direct Correct AC Choice Performance",
+       x = "Session",
+       y = "Overall Recognition Memory (%)",
+       color = "Associative Inference Performance",
+       fill = "Associative Inference Performance") +
+  theme_minimal()
+```
+
+```{r}
+# Calculate the quartiles for the 'direct_combined_AC_choice' columns
+quantiles_AC <- quantile(GenRepRec_clean$direct_combined_AC_choice, probs = c(0.25, 0.75), na.rm = TRUE)
+
+# Classify participants into three groups based on their performance
+GenRepRec_clean <- GenRepRec_clean %>%
+  mutate(
+    ThreeGroups_direct_combined_AC = case_when(
+      direct_combined_AC_choice <= quantiles_AC[1] ~ "Low",
+      direct_combined_AC_choice > quantiles_AC[1] & direct_combined_AC_choice <= quantiles_AC[2] ~ "Middle",
+      direct_combined_AC_choice > quantiles_AC[2] ~ "High"
+    )
+  )
+
+# Reshape the data to long format for plotting
+long_data <- GenRepRec_clean %>%
+  select(Participant.ID, rec_Overall_0, rec_Overall_1, ThreeGroups_direct_combined_AC) %>%
+  pivot_longer(cols = starts_with("rec_Overall_"),
+               names_to = "Session",
+               values_to = "rec_Overall") %>%
+  mutate(
+    Session = factor(gsub("rec_Overall_", "", Session)),
+    Group = ThreeGroups_direct_combined_AC
+  ) 
+
+# Calculate the mean rec_Overall for each Session and Group combination
+group_means <- long_data %>%
+  group_by(Session, Group) %>%
+  summarize(mean_rec_Overall = mean(rec_Overall, na.rm = TRUE)) %>%
+  ungroup()
+
+# Create the combined graph with violin plot and line graph
+ggplot(long_data, aes(x = Session, y = rec_Overall, color = Group)) +
+  geom_violin(aes(fill = Group), trim = FALSE, alpha = 0.5) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +
+  geom_line(data = group_means, aes(x = Session, y = mean_rec_Overall, group = Group), size = 1) +
+  geom_point(data = group_means, aes(x = Session, y = mean_rec_Overall, group = Group), size = 3) +
+  scale_color_manual(values = c("Low" = "lightpink", "Middle" = "yellowgreen", "High" = "lightblue")) +
+  scale_fill_manual(values = c("Low" = "lightpink", "Middle" = "yellowgreen", "High" = "lightblue")) +
+  labs(title = "Session-wise Comparison of Recognition Performance by Direct Correct AC Choice Performance Quartiles",
+       x = "Session",
+       y = "Overall Recognition Memory (%)",
+       color = "Associative Inference Performance",
+       fill = "Associative Inference Performance") +
+  theme_minimal()
+```
+
+## Representation predicts associative inference?
+
+Semantic representation:
+
+```{r}
+# Reshape the data to long format
+long_data <- GenRepRec_clean%>% 
+  mutate(ParticipantID = row_number())%>%
+  pivot_longer(
+    cols = c(semrep_0, semrep_1, DirectCorrect_AC_Choice_Acc_0, DirectCorrect_AC_Choice_Acc_1),
+    names_to = c(".value", "session"),
+    names_pattern = "(.*)_(\\d)"
+  ) %>%
+  mutate(session = as.factor(as.numeric(session) + 1))  # Ensure that 'session' is a factor
+
+# Fit a linear model with interaction between semrep and session
+model <- lmer(DirectCorrect_AC_Choice_Acc ~ 1 + semrep * session + (1 | Participant.ID), data = long_data)
+summary(model)
+AIC(model)
+
+# Use ggpredict() to generate predictions across values of semrep for each session
+predictions <- ggpredict(model, terms = c("semrep", "session"))
+
+# Plot the predictions
+ggplot(predictions, aes(x = x, y = predicted, color = group)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.1) +
+  labs(title = "Predicted Associative Inference Performance by Semantic Representation Performance and Session",
+       x = "Semantic Representation Test Performance (%)",
+       y = "Predicted Associative Inference Performance (%)",
+       color = "Session",
+       fill = "Session") +
+  scale_color_brewer(palette = "Set1") + # Use a color palette that distinguishes the sessions well
+  theme_minimal()
+```
+
+Visual representation:
+
+```{r}
+# Reshape the data to long format
+long_data <- GenRepRec_clean%>% 
+  mutate(ParticipantID = row_number())%>%
+  pivot_longer(
+    cols = c(visrep_0, visrep_1, DirectCorrect_AC_Choice_Acc_0, DirectCorrect_AC_Choice_Acc_1),
+    names_to = c(".value", "session"),
+    names_pattern = "(.*)_(\\d)"
+  ) %>%
+  mutate(session = as.factor(as.numeric(session) + 1))  # Ensure that 'session' is a factor
+
+# Fit a linear model with interaction between visrep and session
+model <- lmer(DirectCorrect_AC_Choice_Acc ~ 1 + visrep * session + (1 | Participant.ID), data = long_data)
+summary(model)
+AIC(model)
+
+# Use ggpredict() to generate predictions across values of semrep for each session
+predictions <- ggpredict(model, terms = c("visrep", "session"))
+
+# Plot the predictions
+ggplot(predictions, aes(x = x, y = predicted, color = group)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.1) +
+  labs(title = "Predicted Associative Inference Performance by Visual Representation Performance and Session",
+       x = "Visual Representation Test Performance (%)",
+       y = "Predicted Associative Inference Performance (%)",
+       color = "Session",
+       fill = "Session") +
+  scale_color_brewer(palette = "Set1") + # Use a color palette that distinguishes the sessions well
+  theme_minimal()
+```
+
+## Plotting odd ratios for AB and BC source/ choice predictors on AC choice performance
+
+```{r}
+process_AC_choice_odds <- function(file_path, testType) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Ensure column names are correctly referenced as symbols
+  testType <- rlang::sym(testType)
+  
+  # Check if the file's sona_id matches any in the sona_ids_removed list
+  file_sona_id <- unique(data$sona_id)
+  
+  if (file_sona_id %in% sona_ids_removed) {
+    # Skip this file if sona_id matches
+    return(NULL)  # or return(data.frame()) to return an empty data frame
+  }
+  
+  # Convert 'true' to 1 and 'false' to 0 for specific columns
+  data$responseCorrectSource <-
+    ifelse(tolower(as.character(data$responseCorrectSource)) == 'true',
+           1,
+           ifelse(tolower(
+             as.character(data$responseCorrectSource)
+           ) == 'false', 0,
+           ifelse(nzchar(
+             as.character(data$responseCorrectSource)
+           ), NA, NA)))
+  
+  data$responseCorrectChoice <-
+    ifelse(tolower(as.character(data$responseCorrectChoice)) == 'true',
+           1,
+           ifelse(tolower(
+             as.character(data$responseCorrectChoice)
+           ) == 'false', 0,
+           ifelse(nzchar(
+             as.character(data$responseCorrectChoice)
+           ), NA, NA)))
+  
+  # Identify triadIDs for all AB and BC trials where the response was correct
+  correct_ab_triadIDs <- data %>%
+    filter(assinfTrialType %in% 'AB', .data[[testType]] == 1) %>%
+    pull(triadID) # Extracting the triadID directly
+  
+  correct_bc_triadIDs <- data %>%
+    filter(assinfTrialType %in% 'BC', .data[[testType]] == 1) %>%
+    pull(triadID) # Extracting the triadID directly
+  
+  # Filter for AC trials
+    ac_trials <- data %>%
+    filter(assinfTrialType == 'AC' & (responseCorrectChoice == 0 | responseCorrectChoice == 1))
+
+  # Add a binary variable indicating whether each AC trial is a direct correct trial
+    ac_trials$AB_Correct <-
+      as.integer(ac_trials$triadID %in% correct_ab_triadIDs)
+    ac_trials$BC_Correct <-
+      as.integer(ac_trials$triadID %in% correct_bc_triadIDs)
+    
+  # Return the modified data frame
+  return(ac_trials)
+}
+
+# Creat the odds list for AB/BC source trials
+AC_choice_odds_list_givenSource <- lapply(csv_files, function(x) process_AC_choice_odds(x, "responseCorrectSource"))
+AC_choice_odds_list_givenSource <- do.call(rbind, AC_choice_odds_list_givenSource)
+
+# Rename the columns using dplyr's rename function
+AC_choice_odds_list_givenSource <- AC_choice_odds_list_givenSource %>%
+  rename(AB_Source_Correct = AB_Correct, BC_Source_Correct = BC_Correct)
+
+# Creat the odds list for AB/BC choice trials
+AC_choice_odds_list_givenChoice <- lapply(csv_files, function(x) process_AC_choice_odds(x, "responseCorrectChoice"))
+AC_choice_odds_list_givenChoice <- do.call(rbind, AC_choice_odds_list_givenChoice)
+
+# Rename the columns using dplyr's rename function
+AC_choice_odds_list_givenChoice <- AC_choice_odds_list_givenChoice %>%
+  rename(AB_Choice_Correct = AB_Correct, BC_Choice_Correct = BC_Correct)
+```
+
+Fit a logistic regression model:
+
+```{r}
+# The outcome variable is 'responseCorrectChoice'
+# The predictors are 'AB_Source_Correct' and 'BC_Source_Correct', plus a 'session' variable
+model_1 <- glm(responseCorrectChoice ~ AB_Source_Correct * session + BC_Source_Correct * session, 
+             data = AC_choice_odds_list_givenSource, family = binomial())
+
+model_2 <- glm(responseCorrectChoice ~ AB_Choice_Correct * session + BC_Choice_Correct * session, 
+             data = AC_choice_odds_list_givenChoice, family = binomial())
+
+summary(model_1)
+summary(model_2)
+
+# Prepare the model summary for plotting: convert log-odds to odds ratios
+model_tidy_1 <- tidy(model_1, exponentiate = TRUE, conf.int = TRUE)
+model_tidy_2 <- tidy(model_2, exponentiate = TRUE, conf.int = TRUE)
+
+# Plot the odds ratios
+ggplot(model_tidy_1, aes(x = term, y = estimate, ymin = conf.low, ymax = conf.high)) +
+  geom_point() +
+  geom_errorbar(width = 0.2) +
+  coord_flip() +  # Make the plot horizontal for easier reading
+  labs(title = "Odds Ratios for Correct AC Choice Based on AB/BC Source Performance",
+       x = "Predictor",
+       y = "Odds Ratio",
+       caption = "Error bars represent 95% confidence intervals") +
+  theme_minimal()  # Use a minimal theme for a cleaner look
+```
+
+```{r}
+# Extract the estimate and confidence interval for model1
+AB_S <- model_tidy_1$estimate[2]
+conf_low_1 <- model_tidy_1$conf.low[2]
+conf_high_1 <- model_tidy_1$conf.high[2]
+
+BC_S <- model_tidy_1$estimate[4]
+conf_low_2 <- model_tidy_1$conf.low[4]
+conf_high_2 <- model_tidy_1$conf.high[4]
+
+# Extract the interaction term estimate and confidence interval for model2
+AB_C <- model_tidy_2$estimate[2]
+conf_low_3 <- model_tidy_2$conf.low[2]
+conf_high_3 <- model_tidy_2$conf.high[2]
+
+BC_C <- model_tidy_2$estimate[4]
+conf_low_4 <- model_tidy_2$conf.low[4]
+conf_high_4 <- model_tidy_2$conf.high[4]
+
+# Create a combined data frame
+odds_plotting <- data.frame(
+  term = c("AB Source", "BC Source", "AB Choice", "BC Choice"),
+  estimate = c(AB_S, BC_S, AB_C, BC_C),
+  lowerCI = c(conf_low_1, conf_low_2, conf_low_3, conf_low_4),
+  upperCI = c(conf_high_1, conf_high_2, conf_high_3, conf_high_4)
+)
+
+# Plot the odds ratios
+ggplot(odds_plotting, aes(x = term, y = estimate, ymin = lowerCI, ymax = upperCI)) +
+  geom_point(position = position_dodge(width = 0.25)) +
+  geom_errorbar(position = position_dodge(width = 0.25), width = 0.1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black") +
+  coord_flip() +  # Make the plot horizontal for easier reading
+  labs(x = "Trial Type", y = "Odds Ratio", title = "Odds Ratios for AB and BC Source/ Choice Predictors",
+       caption = "Error bars represent 95% confidence intervals") +
+  theme_minimal() 
+```
+
+## Performing regressions to answer the trade-off question
+
+### Generalization score on the x-axis and recognition memory score on the y-axis
+
+```{r}
+# Reshape the data to long format
+data_long <- GenRepRec_clean%>% 
+  mutate(Subject = row_number())%>%
+  pivot_longer(
+    cols = c(DirectCorrect_AC_Choice_Acc_0, DirectCorrect_AC_Choice_Acc_1, 
+           rec_Overall_0, rec_Overall_1),
+    names_to = c(".value", "Session"),
+    names_pattern = "(.*)_(\\d)"
+  ) %>%
+  mutate(Session = as.factor(as.numeric(Session) + 1))  # Ensure that 'session' is a factor
+```
+
+```{r}
+# Calculate the correlation between the two performances for both sessions
+cor(x = GenRepRec_clean$DirectCorrect_AC_Choice_Acc_0, y = GenRepRec_clean$rec_Overall_0, method = "spearman")
+
+cor(x = GenRepRec_clean$DirectCorrect_AC_Choice_Acc_1, y = GenRepRec_clean$rec_Overall_1, method = "spearman")
+```
+
+```{r}
+# Graph each individual's data out
+ggplot(data_long, aes(x = DirectCorrect_AC_Choice_Acc, y = rec_Overall, group = Subject, color = Session)) + geom_line() +  geom_point() + facet_wrap( ~ Subject) +ylab("Recognition Memory Performance (%)") + xlab("Generalization Performance (%)")
+```
+
+```{r}
+# Fit a linear mixed-effects model to account for the individual variations 
+# An interaction term between `session` and `generalization_score` is included  to see if the effect of generalization on recognition changes from one session to the other.
+model_H1 <- lmer(rec_Overall ~  1 + DirectCorrect_AC_Choice_Acc * Session +  (1 | Subject) , data = data_long)
+summary(model_H1)
+```
+
+Note: Although this linear regression model below does consider the repeated measures by including session information and interaction terms, it does not fully account for the correlation between repeated measures from the same subjects in the way that mixed-effects models or GEEs (generalized estimating equations) do.
+
+```{r}
+# Fit one single linear model with session as the predictor
+model <- lm(rec_Overall ~  DirectCorrect_AC_Choice_Acc * Session, data = data_long)
+summary(model)
+```
+
+Fit another two kinds of linear regression models and graph them.
+
+```{r}
+# Calculate combined accuracy for "rec_Overall_0" and "rec_Overall_1"
+GenRepRec_clean$rec_combined_overall <- (GenRepRec_clean$rec_Overall_0 + GenRepRec_clean$rec_Overall_1) / 2
+
+# The first kind: averaging across two sessions' data  
+
+# Fit a linear regression model (averaging the two sessions' data)
+model <- lm(rec_combined_overall ~ direct_combined_AC_choice, data = GenRepRec_clean)
+summary(model)
+
+# Graph the linear regression after averaging the two sessions' data
+ggplot(GenRepRec_clean, aes(x = direct_combined_AC_choice, y = rec_combined_overall)) +
+  geom_point() +  # Plot the raw data points
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +  # Add linear regression line with standard error
+  labs(title = "Linear Regression of Recognition Memory on Generalization Averaging Across Sessions",
+       x = "Generalization Performance (%)",
+       y = "Recognition Memory Performance (%)") +
+  theme_minimal()  # Apply a minimalistic theme
+
+
+# The second kind: split the combined model in the above chunck into two seperate models by session
+
+# Fit two separate linear models for each session's data 
+model <- lm(rec_Overall_0 ~ DirectCorrect_AC_Choice_Acc_0, data = GenRepRec_clean)
+summary(model)
+model <- lm(rec_Overall_1 ~ DirectCorrect_AC_Choice_Acc_1, data = GenRepRec_clean)
+summary(model)
+
+# Graph the linear regressions by session
+ggplot(data_long, aes(x = DirectCorrect_AC_Choice_Acc, y = rec_Overall, group = Session, color = Session)) + geom_point() + stat_smooth(method="lm") + labs(title = "Linear Regression of Recognition Memory on Generalization by Session") + ylab("Recognition Memory Performance (%)") + xlab("Generalization Performance (%)") +  theme_minimal()
+```
+
+Now, graph the linear relationship by group (of generalization performance) for the two sessions seperately.
+
+```{r}
+# Graph the linear regression by their generalization performance (for session 1)
+ggplot(GenRepRec_clean, aes(x = DirectCorrect_AC_Choice_Acc_0, y = rec_Overall_0, group = ThreeGroups_direct_combined_AC, color = ThreeGroups_direct_combined_AC)) + geom_point() + stat_smooth(method="lm") + labs(title = "Linear Regression by Group for Session 1") + ylab("Recognition Memory Performance (%)") + xlab("Generalization Performance (%)") +  theme_minimal() +
+scale_color_discrete(name = "Group") 
+
+# Fit separate linear models for each group and extract slopes
+slopes <- GenRepRec_clean %>%
+  group_by(ThreeGroups_direct_combined_AC) %>%
+  do(tidy(lm(rec_Overall_0 ~ DirectCorrect_AC_Choice_Acc_0, data = .)))
+print(slopes)
+
+# Graph the linear regression by their generalization performance (for session 2)
+ggplot(GenRepRec_clean, aes(x = DirectCorrect_AC_Choice_Acc_1, y = rec_Overall_1, group = ThreeGroups_direct_combined_AC, color = ThreeGroups_direct_combined_AC)) + geom_point() + stat_smooth(method="lm") + labs(title = "Linear Regression by Group for Session 2") + ylab("Recognition Memory Performance (%)") + xlab("Generalization Performance (%)") +  theme_minimal() +
+scale_color_discrete(name = "Group") 
+
+# Fit separate linear models for each group and extract slopes
+slopes <- GenRepRec_clean %>%
+  group_by(ThreeGroups_direct_combined_AC) %>%
+  do(tidy(lm(rec_Overall_1 ~ DirectCorrect_AC_Choice_Acc_1, data = .)))
+print(slopes)
+```
+
+Instead of using linear regression, now change the model to linear mixed-effects. Also, instead of seperating into two models by session, make session a predictor.
+
+```{r}
+# Fit another linear mixed-effects model to also include group as a predictor
+model <- lmer(rec_Overall ~ 1 + DirectCorrect_AC_Choice_Acc * Session * ThreeGroups_direct_combined_AC + (1 | Subject), data = data_long)
+summary(model)
+
+# Use ggpredict() to generate predictions across values of generalization scores for each group
+predictions <- ggpredict(model, terms = c("DirectCorrect_AC_Choice_Acc", "ThreeGroups_direct_combined_AC"))
+
+# Plot the predictions
+ggplot(predictions, aes(x = x, y = predicted, color = group)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.1) +
+  labs(title = "Predicted Recognition Performance by Generalization Performance and Group",
+       x = "Generelization Performance (%)",
+       y = "Predicted Recognition Performance (%)",
+       color = "Group",
+       fill = "Group") +
+  scale_color_brewer(palette = "Set1") + # Use a color palette that distinguishes the sessions well
+  theme_minimal()
+```
+
+### Relative change in scores on the two tests as the dependent and independent variables
+
+When a person prioritizes generalization (get better on generalization on the second session), would his score on recognition memory test drop on session 2 compared to session 1?
+
+```{r}
+# Calculate a response ratio, which is a relative measure of change and is calculated by dividing the follow-up value by the baseline value.
+data_long$generalization_response_ratio <- with(data_long, ave(DirectCorrect_AC_Choice_Acc, Subject, FUN = function(x) c(NA, x[2] / x[1])))
+data_long$recognition_response_ratio <- with(data_long, ave(rec_Overall, Subject, FUN = function(x) c(NA, x[2] / x[1])))
+
+# Fit the linear regression model
+model <- lm(recognition_response_ratio ~ generalization_response_ratio, data = data_long)
+summary(model)
+
+# Graph the linear regression
+ggplot(data_long, aes(x = generalization_response_ratio, y = recognition_response_ratio)) + geom_point() + stat_smooth(method="lm") +ylab("Standardized Change in Recognition Performance") + xlab("Standardized Change in Generalization Performance") +  theme_minimal()
+
+# Graph the linear regression but group the data by their generalization performance
+ggplot(data_long, aes(x = generalization_response_ratio, y = recognition_response_ratio, group = ThreeGroups_direct_combined_AC, color = ThreeGroups_direct_combined_AC)) + geom_point() + stat_smooth(method="lm") + ylab("Standardized Change in Recognition Performance") + xlab("Standardized Change in Generalization Performance") +  theme_minimal() +
+scale_color_discrete(name = "Group")
+
+# Fit separate linear models for each group and extract slopes
+slopes <- data_long %>%
+  group_by(ThreeGroups_direct_combined_AC) %>%
+  do(tidy(lm(recognition_response_ratio ~ generalization_response_ratio, data = .)))
+print(slopes)
+```
+
+### Two tests both on x-axis and accuracy score on y-axis
+
+What if I make the two tests as the two levels in "Condition" and accuracy score as the dependent variable "Accuracy Rate"?
+
+Basically, I'm trying to answer another new question like: what does being in generalization test different than being in recognition test for participants (grouped by their generalization performance) in terms of their accuracy rates?
+
+```{r}
+# First, reshape the data to a long format with the two tests as the two levels in "Condition"
+GenRepRec_clean$Group <- GenRepRec_clean$ThreeGroups_direct_combined_AC
+
+data_long_a <- GenRepRec_clean %>%
+  select(Participant.ID, Group, DirectCorrect_AC_Choice_Acc_0, DirectCorrect_AC_Choice_Acc_1, rec_Overall_0, rec_Overall_1) %>%
+  pivot_longer(
+    cols = starts_with(c("DirectCorrect_AC_Choice_Acc_", "rec_Overall_")),
+    names_to = "condition",
+    values_to = "accuracy_rate"
+  ) %>%
+  mutate(condition = factor(condition, levels = c("DirectCorrect_AC_Choice_Acc_0", "DirectCorrect_AC_Choice_Acc_1", "rec_Overall_0", "rec_Overall_1")))
+
+# Now, we can plot the data
+ggplot(data_long_a, aes(x = condition, y = accuracy_rate, fill = Group)) +
+  stat_summary(
+    fun = mean, geom = "col", 
+    position = position_dodge(width = 0.8), 
+    width = 0.7
+  ) +
+  stat_summary(
+    fun.data = mean_se, geom = "errorbar", 
+    position = position_dodge(width = 0.8), 
+    width = 0.25
+  ) +
+  labs(x = "Conditions", y = "Mean Accuracy Rate (%)") +
+  scale_x_discrete(labels = c("Generalization_S1", "Generalization_S2", "Recognition_S1", "Recognition_S2")) +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme_minimal()
+
+# Define a function to perform paired t-tests for specified comparisons within each group
+perform_paired_t_tests <- function(data, group_name) {
+  # Filter data for the current group
+  data_filtered <- filter(data, Group == group_name)
+  
+  # Conduct paired t-tests for the specified pairs
+  test_1_result <- t.test(data_filtered$accuracy_rate[data_filtered$condition == "DirectCorrect_AC_Choice_Acc_0"],
+                          data_filtered$accuracy_rate[data_filtered$condition == "DirectCorrect_AC_Choice_Acc_1"],
+                          paired = TRUE)
+  
+  test_2_result <- t.test(data_filtered$accuracy_rate[data_filtered$condition == "rec_Overall_0"],
+                          data_filtered$accuracy_rate[data_filtered$condition == "rec_Overall_1"],
+                          paired = TRUE)
+  
+  # Return a list of results
+  list(
+    Group = group_name,
+    Test_1_p_value = test_1_result$p.value,
+    Test_2_p_value = test_2_result$p.value
+  )
+}
+
+# Get unique group names
+groups <- unique(data_long_a$Group)
+
+# Perform the paired t-tests for each group
+results <- map(groups, ~perform_paired_t_tests(data_long_a, .x))
+
+# Convert the list of results to a data frame
+results_df <- bind_rows(results)
+
+# Print the results
+print(results_df)
+```
+
+Now, how about running a linear mixed-effects model to account for test type, session, and group, with accuracy rate as the DV?
+
+```{r}
+# You may disregard this chunk... Zach said that it's not interpretable...
+
+# Transform the data appropriately 
+data_long_b <- data_long_a %>%
+  separate(condition, into = c("testType", "Session"), sep = "_(?=[^_]*$)")
+
+# Run a linear mixed-effects model 
+model <- lmer(accuracy_rate ~ testType*Session*Group + (1|Participant.ID), data=data_long_b)
+summary(model)
+
+# Run post-hoc comparisons
+emm <- emmeans(model, pairwise ~ testType*Session*Group)
+specific_pairs <- pairs(emm, simple = "each")
+summary(specific_pairs)
+```
+
+How about we have the response ratio (change in the scores across two sessions) as the DV, rather than the accuracy rate?
+
+Graph it out and fit a linear mixed-effects model just as above.
+
+```{r}
+# Adapt the data into proper format
+data_longer <- data_long %>%
+  pivot_longer(
+    cols = c(generalization_response_ratio, recognition_response_ratio),
+    names_to = "Condition",
+    values_to = "Score"
+  )
+
+# Change the name for better plotting
+data_longer$Group <- data_longer$ThreeGroups_direct_combined_AC
+
+# Plotting it out
+ggplot(data_longer, aes(x = Condition, y = Score, color = Group)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  labs(x = "Condition", y = "Score") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(0, 2, 0.2), limits = c(0, NA)) +  # Adjust based on the score range
+  scale_color_brewer(palette = "Pastel1") 
+
+# Run a linear mixed-effects model 
+model <- lmer(Score ~ Condition*Group + (1|Participant.ID), data=data_longer)
+summary(model)
+
+# Run post-hoc comparisons
+emm <- emmeans(model, pairwise ~ Condition*Group)
+specific_pairs <- pairs(emm, simple = "each")
+summary(specific_pairs)
+```
+
+## **Structural equation modeling to answer the trade-off question**
+
+```{r}
+# Model 1
+model1 <- '
+  # Measurement model
+  Generalization =~ Q4 + Q5 + Q6 + DirectCorrect_AC_Choice_Acc_0 + DirectCorrect_AC_Choice_Acc_1 + semrep_0 + semrep_1
+  Specificity =~ Q1 + Q2 + Q3 + assinf_source_BC_0 + assinf_source_BC_1 + rec_Lure_0 + rec_Lure_1 
+  Mental Imagery Ability =~ Q7 + Q8 + Q9 + visrep_0 + visrep_1
+
+  # Rgressions
+  Generalization ~ Mental Imagery Ability 
+  
+  # Variances and Covariances (Correlations)
+  Generalization ~~ Specificity
+'
+
+fit1 <- sem(model1, data=GenRepRec_clean)
+
+summary(fit1, standardized = TRUE, fit.measures = TRUE)
+```
+
+```{r}
+# Model 2
+model2 <- '
+  # Measurement model
+  Generalization =~ Q4 + Q5 + Q6 + DirectCorrect_AC_Choice_Acc_0 + DirectCorrect_AC_Choice_Acc_1 + semrep_0 + semrep_1 + visrep_0 + visrep_1 + assinf_source_AC_0 + assinf_source_AC_1
+  Specificity =~ Q1 + Q2 + Q3 + assinf_source_BC_0 + assinf_source_BC_1 + rec_Lure_0 + rec_Lure_1 + assinf_source_AB_0 + assinf_source_AB_1
+  
+  # Variances and Covariances (Correlations)
+  Generalization ~~ Specificity
+'
+
+fit2 <- sem(model2, data=GenRepRec_clean)
+
+summary(fit2, standardized = TRUE, fit.measures = TRUE)
+```
+
+## Counting the number of "lure" responses
+
+```{r}
+# Function to process each CSV file
+process_lureCount <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Check if the file's sona_id matches any in the sona_ids_removed list
+  file_sona_id <- unique(data$sona_id)
+  
+  if (file_sona_id %in% sona_ids_removed) {
+    # Skip this file if sona_id matches
+    return(NULL)  # or return(data.frame()) to return an empty data frame
+  }
+  
+  # Group by session, then summarize to calculate accuracy rate
+  result_df <- data %>%
+      filter( !is.na(session), session != "") %>%
+    group_by(session) %>%
+    summarise(lureCount = sum(response == "arrowdown", na.rm = TRUE)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = session, values_from = lureCount)
+
+  # Rename columns to include prefix "visrep_"
+  new_names <- paste0("lureCount_", names(result_df))
+  names(result_df) <- new_names
+  
+  return(result_df)
+}
+
+# Apply the function to each file and combine the results
+lureCount <- map_df(csv_files, process_lureCount)
+
+# Run a paired-sample t-test to see if two sessions are significantly different from each other
+t.test(lureCount$lureCount_0, lureCount$lureCount_1, paired = TRUE)
+```
+
+## Plotting the two representation tests' performance directly
+
+```{r}
+# Prepare data for both sessions
+name_changes <- c(semrep_0 = "Semantic Representation Test", semrep_1 = "Semantic Representation Test", visrep_0 = "Visual Representation Test", visrep_1 = "Visual Representation Test")
+
+data_session_0 <- prepare_data(GenRepRec_clean, c('semrep_0', 'visrep_0'), name_changes, "Session 1")
+data_session_1 <- prepare_data(GenRepRec_clean, c('semrep_1', 'visrep_1'), name_changes, "Session 2")
+
+# Combine data frames
+combined_data <- rbind(data_session_0, data_session_1)
+
+# Plot it out
+ggplot(combined_data, aes(x = Condition, y = Accuracy, fill = Session)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Accuracy - SE, ymax = Accuracy + SE), width = .2, position = position_dodge(.9)) +
+  theme_minimal() +
+  labs(title = "Mean Accuracy of Representation Tests by Test Type", x = "Test Type", y = "Mean Accuracy (%)") +
+  scale_fill_brewer(palette = "Pastel1") + # Color code by session
+  theme(strip.background = element_blank(), # Remove the background of the facet label
+        strip.text.x = element_text(margin = margin(0,0,0,0))) # Adjust the margin of the facet label if needed
+```
+
+```{r}
+# Change the graph type to a violin plot to see the distribution
+vioplot(GenRepRec_clean$semrep_0, GenRepRec_clean$semrep_1, names = c("semantic rep session 1", "semantic rep session 2"),
+        col = "lightblue")
+vioplot(GenRepRec_clean$visrep_0, GenRepRec_clean$visrep_1, names = c("visual rep session 1", "visual rep session 2"),
+        col = "lightpink")
+```
+
+## Plotting recognition memory accuracy by representation test presence, item position, and session
+
+At first I want to fit a logistic regression model and plot the odds ratio to answer this question.
+
+```{r}
+process_rec_rep_odds <- function(file_path) {
+  # Read the data
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Check if the file's sona_id matches any in the sona_ids_removed list
+  file_sona_id <- unique(data$sona_id)
+  
+  if (file_sona_id %in% sona_ids_removed) {
+    # Skip this file if sona_id matches
+    return(NULL)  # or return(data.frame()) to return an empty data frame
+  }
+  
+  # Convert relevant columns into lower case strings
+  data$responseCorrectRec <-
+    tolower(as.character(data$responseCorrectRec))
+  data$responseCorrectSem <-
+    tolower(as.character(data$responseCorrectSem))
+  data$responseCorrectVis <-
+    tolower(as.character(data$responseCorrectVis))
+  
+  # Identify triadIDs for all semantic and visual trials
+  sem_triadIDs <- data %>%
+    filter(responseCorrectSem == "true" |
+             responseCorrectSem == "false") %>%
+    pull(triadID_sem) # Extracting the triadID directly
+  
+  vis_triadIDs <- data %>%
+    filter(responseCorrectVis == "true" |
+             responseCorrectVis == "false") %>%
+    pull(triadID_vis) # Extracting the triadID directly
+  
+  # Filter for rec trials
+  rec_trials <- data %>%
+    filter((responseCorrectRec == "true" |
+              responseCorrectRec == "false") & recTrialType != "New")
+  
+  # Convert 'true' to 1 and 'false' to 0 for specific columns
+  rec_trials$responseCorrectRec <-
+    ifelse(tolower(as.character(rec_trials$responseCorrectRec)) == 'true',
+           1,
+           ifelse(tolower(
+             as.character(rec_trials$responseCorrectRec)
+           ) == 'false', 0,
+           ifelse(nzchar(
+             as.character(rec_trials$responseCorrectRec)
+           ), NA, NA)))
+  
+  # Add a binary variable indicating whether each rec trial is tested in visual/ semantic representation test
+  rec_trials$Sem_Present <-
+    as.integer(rec_trials$recTriadID %in% sem_triadIDs)
+  rec_trials$Vis_Present <-
+    as.integer(rec_trials$recTriadID %in% vis_triadIDs)
+  rec_trials$Not_Present <- as.integer(
+    !(rec_trials$recTriadID %in% sem_triadIDs) & !(rec_trials$recTriadID %in% vis_triadIDs)
+)
+
+  # Return the modified data frame
+  return(rec_trials)
+}
+
+# Creat the odds list 
+rec_odds_list_givenRep <- lapply(csv_files, process_rec_rep_odds)
+rec_odds_list_givenRep <- do.call(rbind, rec_odds_list_givenRep)
+```
+
+Fit a logistic regression model:
+
+```{r}
+# The outcome variable is 'responseCorrectRec'
+# The predictors are 'Sem_Present', 'Vis_Present', plus a 'position' variable
+model_1 <- glm(responseCorrectRec ~ Sem_Present * recTrialPosition + Vis_Present * recTrialPosition, 
+             data = rec_odds_list_givenRep, family = binomial())
+
+# Prepare the model summary for plotting: convert log-odds to odds ratios
+model_tidy_1 <- tidy(model_1, exponentiate = TRUE, conf.int = TRUE)
+
+# Plot the odds ratios
+ggplot(model_tidy_1, aes(x = term, y = estimate, ymin = conf.low, ymax = conf.high)) +
+  geom_point() +
+  geom_errorbar(width = 0.2) +
+  coord_flip() +  # Make the plot horizontal for easier reading
+  labs(title = "Odds Ratios for Correct Recognition Based on Presence in Representation Tests and Item Position",
+       x = "Predictor",
+       y = "Odds Ratio",
+       caption = "Error bars represent 95% confidence intervals") +
+  theme_minimal()  # Use a minimal theme for a cleaner look
+```
+
+Then, I realized how difficult it was to interpret this graph. So I changed to another way to show the relationship.
+
+The first graph I plotted only looked at rec item position and session.
+
+```{r}
+# Step 1: Calculate mean responseCorrectRec per sona_id, for each recTrialPosition and session
+participant_level_means <- rec_odds_list_givenRep %>%
+  mutate(session = as.factor(as.numeric(session) + 1)) %>%
+  group_by(sona_id, recTrialPosition, session) %>%
+  summarise(
+    subjectMean = mean(responseCorrectRec, na.rm = TRUE) * 100,
+    .groups = 'drop'  # This drops the last grouping level, avoiding the error
+  )
+
+# Step 2: Calculate overall mean and SEM of these means across recTrialPosition and session
+filtered_data <- participant_level_means %>%
+  group_by(recTrialPosition, session) %>%
+  summarise(
+    Mean = mean(subjectMean, na.rm = TRUE),  # Convert the mean to a percentage
+    SEM = sd(subjectMean, na.rm = TRUE) / sqrt(n()),
+    .groups = 'drop'
+  )
+
+# Now filtered_data contains the overall mean and SEM by recTrialPosition and session
+ggplot(filtered_data, aes(x = recTrialPosition, y = Mean, group = session, color = session)) +
+  geom_line() +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM), width = 0.2) +
+  geom_point() +
+  labs(title = "Mean Recognition Performance by Item Position and Session",
+       x = "Item Position",
+       y = "Mean Recognition Memory Accuracy (%)") +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set1") # Adjust color palette as needed
+```
+
+Then, I included "presence in representation tests" in as another predictor.
+
+```{r}
+# Convert the data into proper format
+rec_odds_list_givenRep <- rec_odds_list_givenRep %>%
+  mutate(
+    RepresentationTest = case_when(
+      Sem_Present == 1 ~ "Semantic",
+      Vis_Present == 1 ~ "Visual",
+      Not_Present == 1 ~ "Not Presented",
+      TRUE ~ "Unknown"  # Catch-all condition in case of data issues
+    ),
+    RepresentationTest = factor(RepresentationTest)
+  )
+
+# Calculate mean responseCorrectRec per sona_id, for each recTrialPosition and session and presence
+participant_level_means <- rec_odds_list_givenRep %>%
+  mutate(session = as.factor(as.numeric(session) + 1)) %>%
+  group_by(sona_id, recTrialPosition, session, RepresentationTest) %>%
+  summarise(
+    subjectMean = mean(responseCorrectRec, na.rm = TRUE) * 100,
+    .groups = 'drop'  # This ensures the group_by setting is reset after summarise
+  )
+
+# Calculate overall mean and SEM of these means across recTrialPosition and session and presence
+filtered_data <- participant_level_means %>%
+  group_by(recTrialPosition, session, RepresentationTest) %>%
+  summarise(
+    Mean = mean(subjectMean, na.rm = TRUE),  # Already converted to percentage
+    SEM = sd(subjectMean, na.rm = TRUE) / sqrt(n()),
+    .groups = 'drop'
+  )
+
+# Ensure session is a factor with desired labels
+filtered_data$session <- factor(filtered_data$session,
+                                levels = c("1", "2"),
+                                labels = c("Session 1", "Session 2"))
+
+# Plot it out
+ggplot(filtered_data, aes(x = recTrialPosition, y = Mean, color = RepresentationTest))+
+  geom_line(aes(group = interaction(session, RepresentationTest))) +
+  geom_errorbar(aes(ymin = Mean - SEM, ymax = Mean + SEM, group = interaction(session, RepresentationTest)), width = 0.2) +
+  geom_point(aes(shape = RepresentationTest)) +
+  facet_wrap(~session) +
+  labs(title = "Recognition Memory Performance by Item Position, Session, and Presence in Representation Tests",
+       x = "Item Position",
+       y = "Mean Recognition Memory Accuracy (%)",
+       color = "Presence in Representation Tests",
+       shape = "Presence in Representation Tests") +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal() 
+```
